@@ -1,27 +1,27 @@
-PyTracer
+# PyTracer
 
--Ray tracing with Python3 and PyQt5
+## Ray tracing with Python3 and PyQt5
 
-shawn / Aug 2017
+## shawn / Aug 2017
 
-+Finished:
-..*Camera Ray
-+Render Window
-+Sphere intersection
-+Plane intersection
-+Separate render thread from window
+* Finished:
+  * Camera Ray
+  * Render Window
+  * Sphere intersection
+  * Plane intersection
+  * Separate render thread from window
 
-Need improvement:
-+Anti-aliasing
+* Need improvement:
+  * Anti-aliasing
 
-To-do:
-+Patch render / multi-threading
-+Add light
-+Shadow
-+Radiance
-+Cube Intersection
-+Triange intersection
-+Restucture the whole thing
+* To-do:
+  * Patch render / multi-threading
+  * Add light
+  * Shadow
+  * Radiance
+  * Cube Intersection
+  * Triange intersection
+  * Restucture the whole thing
 
 
-+tons of stuff to work on.......
+  * tons of stuff to work on.......
