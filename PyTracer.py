@@ -7,7 +7,7 @@
 
 #-------------------------
 
-import sys, math, random
+import sys, math, random, multiprocessing
 from PyQt5.QtWidgets import QApplication, QWidget, QGraphicsScene, QGraphicsView, QGraphicsPixmapItem
 from PyQt5.QtGui import QImage, QPixmap, QColor
 from PyQt5.QtCore import QThread, pyqtSignal,pyqtSlot
