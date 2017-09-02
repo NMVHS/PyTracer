@@ -1,5 +1,4 @@
 #python ray tracing implementation challenge
-#written from scratch!
 #shawn / Aug 2017
 #-------------------------
 #Some stuff can be easily missing:
@@ -159,18 +158,15 @@ class Light:
 		self.pos = pos
 		self.radius = float(radius)
 
-class RenderThread(QThread):
+
+class RenderProcess(multiprocessing.Process):
 	setPixSignal = pyqtSignal(list) #set pixel signal to UI
 
 	def __init__(self,width,height,objects,cam):
-		QThread.__init__(self)
 		self.width = width
 		self.height = height
 		self.objects = objects
 		self.cam = cam
-
-	def test(self):
-		print("working---------------------------")
 
 	def run(self):
 		#----shoot rays-------
@@ -231,10 +227,12 @@ class RenderWindow():
 
 	def startRender(self,width,height,objects,cam):
 		#start render in a new thread
-		self.renderTask = RenderThread(width,height,objects,cam) #have to add self, otherwise thread will be garbage collected
-		self.renderTask.finished.connect(self.update)
-		self.renderTask.setPixSignal.connect(self.getPixColor) #important!! connect custom signal befor thread kicks off
-		self.renderTask.start()
+		for i in range(5):
+			renderTask = RenderProcess(width,height,objects,cam)
+			 #have to add self, otherwise thread will be garbage collected
+			#renderTask.finished.connect(self.update)
+			renderTask.setPixSignal.connect(self.getPixColor) #important!! connect custom signal befor thread kicks off
+			renderTask.start()
 
 	def update(self):
 		#update the render view, note the render is in another thread
