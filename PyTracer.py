@@ -8,8 +8,8 @@
 
 import sys, math, random, multiprocessing
 from PyQt5.QtWidgets import QApplication, QWidget, QGraphicsScene, QGraphicsView, QGraphicsPixmapItem
-from PyQt5.QtGui import QImage, QPixmap, QColor
-from PyQt5.QtCore import QThread, pyqtSignal,pyqtSlot
+from PyQt5.QtGui import QImage, QPixmap, QColor, QPainter
+from PyQt5.QtCore import pyqtSignal,pyqtSlot
 
 #------------------------
 class Vector:
@@ -160,17 +160,21 @@ class Light:
 
 
 class RenderProcess(multiprocessing.Process):
-	setPixSignal = pyqtSignal(list) #set pixel signal to UI
+	#setPixSignal = pyqtSignal(list) #set pixel signal to UI
 
-	def __init__(self,width,height,objects,cam):
+	def __init__(self,outputQ,width,height,startLine,objects,cam):
+		multiprocessing.Process.__init__(self)
+		self.outputQ = outputQ
 		self.width = width
 		self.height = height
+		self.startLine = startLine
 		self.objects = objects
 		self.cam = cam
-
+		
 	def run(self):
+		self.bucketImage = QImage(self.width,100,4)
 		#----shoot rays-------
-		for j in range(0,self.height):
+		for j in range(self.startLine,self.startLine + 100):
 			for i in range(0,self.width):
 				#shoot 4 rays each pixel for anti-aliasing
 				col = Vector(0,0,0)
@@ -187,12 +191,11 @@ class RenderProcess(multiprocessing.Process):
 					col = col + self.getColor(hitBool,hitResult)
 
 				averageCol = col / AAsample
+				self.bucketImage.setPixel(i,j%100,QColor(averageCol.x,averageCol.y,averageCol.z).rgba())
 
-				#emit a signal for UI to set pixel
-				self.setPixSignal.emit([i,j,averageCol])
-
-
-		#self.renderView.update()	
+		#self.bucketImage.save("test2"+ multiprocessing.current_process().name + ".png")
+		self.outputQ.put(self.bucketImage)
+		print("Bucket Finished")
 
 	def getColor(self,hit,hitResult):
 		#hit is bool,
@@ -203,7 +206,7 @@ class RenderProcess(multiprocessing.Process):
 		else:
 			return Vector(0,0,0)
 
-class RenderWindow():
+class RenderWindow:
 	def __init__(self,width,height):
 		#-------ui initialization-------
 		self.app = QApplication(sys.argv)
@@ -215,6 +218,7 @@ class RenderWindow():
 		#-----initialize a QImage, so we can maniputalte the pixels
 		self.renderImage = QImage(width,height,4) #QImage.Format_RGB32
 		self.graphic = QGraphicsScene(0,0,width,height,self.window)
+		
 		self.pixmap = QPixmap().fromImage(self.renderImage)
 		self.graphicItem = self.graphic.addPixmap(self.pixmap)
 
@@ -227,16 +231,36 @@ class RenderWindow():
 
 	def startRender(self,width,height,objects,cam):
 		#start render in a new thread
-		for i in range(5):
-			renderTask = RenderProcess(width,height,objects,cam)
-			 #have to add self, otherwise thread will be garbage collected
-			#renderTask.finished.connect(self.update)
-			renderTask.setPixSignal.connect(self.getPixColor) #important!! connect custom signal befor thread kicks off
-			renderTask.start()
+		self.startLine = [0,100,200,300,400,500]
+		self.jobs = []
+		jobsQueue = multiprocessing.Queue()
+		self.painter = QPainter(self.renderImage)
+		for i in range(6):
+			a = RenderProcess(jobsQueue,width,height,self.startLine[i],objects,cam)
+			self.jobs.append(a)
+			
 
-	def update(self):
+		for each in self.jobs: 
+			each.start()
+
+		for each in self.jobs:
+			each.join()
+
+		bucketImages = []
+		for each in self.jobs:
+			bucketImages.append(jobsQueue.get())
+		
+		#Merge all the buckets
+
+		#bucketImages[0].save('test_03.png')
+		#self.painter.drawImage(0,0,bucketImages[0])
+	
+		#self.update(bucketImages[0])
+
+
+	def update(self,image):
 		#update the render view, note the render is in another thread
-		self.pixmap = QPixmap().fromImage(self.renderImage)
+		self.pixmap = QPixmap().fromImage(image)
 		self.graphicItem.setPixmap(self.pixmap)
 		self.renderImage.save("test.png")
 		print("Render finished")
