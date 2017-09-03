@@ -8,8 +8,9 @@
 
 import sys, math, random, multiprocessing
 from PyQt5.QtWidgets import QApplication, QWidget, QGraphicsScene, QGraphicsView, QGraphicsPixmapItem
-from PyQt5.QtGui import QImage, QPixmap, QColor, QPainter
+from PyQt5.QtGui import QImage, QPixmap, QColor
 from PyQt5.QtCore import pyqtSignal,pyqtSlot
+from PIL import Image
 
 #------------------------
 class Vector:
@@ -170,9 +171,10 @@ class RenderProcess(multiprocessing.Process):
 		self.startLine = startLine
 		self.objects = objects
 		self.cam = cam
+		self.bucketImage = Image.new('RGB',(self.width,100),"black")
 		
 	def run(self):
-		self.bucketImage = QImage(self.width,100,4)
+		bucketPixels = self.bucketImage.load()
 		#----shoot rays-------
 		for j in range(self.startLine,self.startLine + 100):
 			for i in range(0,self.width):
@@ -191,7 +193,7 @@ class RenderProcess(multiprocessing.Process):
 					col = col + self.getColor(hitBool,hitResult)
 
 				averageCol = col / AAsample
-				self.bucketImage.setPixel(i,j%100,QColor(averageCol.x,averageCol.y,averageCol.z).rgba())
+				bucketPixels[i,j%100] = (int(averageCol.x),int(averageCol.y),int(averageCol.z))
 
 		#self.bucketImage.save("test2"+ multiprocessing.current_process().name + ".png")
 		self.outputQ.put(self.bucketImage)
@@ -234,7 +236,6 @@ class RenderWindow:
 		self.startLine = [0,100,200,300,400,500]
 		self.jobs = []
 		jobsQueue = multiprocessing.Queue()
-		self.painter = QPainter(self.renderImage)
 		for i in range(6):
 			a = RenderProcess(jobsQueue,width,height,self.startLine[i],objects,cam)
 			self.jobs.append(a)
@@ -243,8 +244,8 @@ class RenderWindow:
 		for each in self.jobs: 
 			each.start()
 
-		for each in self.jobs:
-			each.join()
+		# for each in self.jobs:
+		# 	each.join()
 
 		bucketImages = []
 		for each in self.jobs:
@@ -252,6 +253,8 @@ class RenderWindow:
 		
 		#Merge all the buckets
 
+		for each in bucketImages:
+			each.show()
 		#bucketImages[0].save('test_03.png')
 		#self.painter.drawImage(0,0,bucketImages[0])
 	
