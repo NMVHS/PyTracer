@@ -10,12 +10,13 @@
   * Sphere intersection
   * Plane intersection
   * Separate render thread from window
+  * Patch render / multiprocessing
 
 * Need improvement:
   * Anti-aliasing
+  * Patch render
 
 * To-do:
-  * Patch render / multi-threading
   * Add light
   * Shadow
   * Radiance
