@@ -4,6 +4,8 @@
 
 ## shawn / Aug 2017
 
+![alt text](test.png)
+
 * Finished:
   * Camera Ray
   * Render Window

@@ -12,8 +12,8 @@ import sys, math, random, multiprocessing, numpy
 #------------------------
 from Vector import Vector
 from Ray import Ray
-from Sphere import Sphere
-from Plane import Plane
+from Geo.Sphere import Sphere
+from Geo.Plane import Plane
 from Camera import Camera
 from Light import Light
 from ObjectList import ObjectList
