@@ -6,11 +6,9 @@
 
 #-------------------------
 
-import sys, math, random, multiprocessing
+import sys, math, random, multiprocessing, numpy
 from PyQt5.QtWidgets import QApplication, QWidget, QGraphicsScene, QGraphicsView, QGraphicsPixmapItem
 from PyQt5.QtGui import QImage, QPixmap, QColor
-from PIL import Image
-from PIL.ImageQt import ImageQt
 
 #------------------------
 class Vector:
@@ -163,25 +161,26 @@ class Light:
 class RenderProcess(multiprocessing.Process):
 	#setPixSignal = pyqtSignal(list) #set pixel signal to UI
 
-	def __init__(self,outputQ,order,width,height,startLine,objects,cam):
+	def __init__(self,outputQ,order,width,height,startLine,bucketHeight,objects,cam):
 		multiprocessing.Process.__init__(self)
 		self.outputQ = outputQ
 		self.order = order
 		self.width = width
 		self.height = height
 		self.startLine = startLine
+		self.bucketHeight = bucketHeight
 		self.objects = objects
 		self.cam = cam
-		self.bucketImage = Image.new('RGB',(self.width,100),"black") #QImage pickling is not supported at the moment. PIL is a way around.
+		#QImage pickling is not supported at the moment. PIL doesn't support 32 bit RGB.
 		
 	def run(self):
-		bucketPixels = self.bucketImage.load()
+		bucketArray = numpy.ndarray(shape=(self.bucketHeight,self.width,3),dtype = numpy.uint8)
 		#----shoot rays-------
-		for j in range(self.startLine,self.startLine + 100):
+		for j in range(self.startLine,self.startLine + self.bucketHeight):
 			for i in range(0,self.width):
 				#shoot 4 rays each pixel for anti-aliasing
 				col = Vector(0,0,0)
-				AAsample = 1
+				AAsample = 4
 				for k in range(0,AAsample):
 					rayDir = Vector(i + random.random() - self.width/2, -j - random.random() + self.height/2, 
 									-0.5*self.width/math.tan(math.radians(self.cam.angle/2))) #Warning!!!!! Convert to radian!!!!!!!
@@ -194,16 +193,14 @@ class RenderProcess(multiprocessing.Process):
 					col = col + self.getColor(hitBool,hitResult)
 
 				averageCol = col / AAsample
-				bucketPixels[i,j%100] = (int(averageCol.x),int(averageCol.y),int(averageCol.z))
+				bucketArray[j%self.bucketHeight,i] = [int(averageCol.x),int(averageCol.y),int(averageCol.z)]
 
-		#self.bucketImage.save("test2"+ multiprocessing.current_process().name + ".png")
-		self.outputQ.put((self.order,self.bucketImage))
-		print("Bucket Finished")
+		self.outputQ.put((self.order,bucketArray))
+		print("Bucket Finished - " + multiprocessing.current_process().name)
 
 	def getColor(self,hit,hitResult):
 		#hit is bool,
 		if hit == True:
-
 			remapHitNormal = (hitResult[2]+Vector(1,1,1))*0.5
 			return Vector(255*remapHitNormal.x,255*remapHitNormal.y,255*remapHitNormal.z)
 		else:
@@ -217,6 +214,8 @@ class RenderWindow:
 		self.window.setFixedSize(width,height)
 		self.window.move(50,50)
 		self.window.setWindowTitle('PyTracer')
+		self.width = width
+		self.height = height
 
 		#-----initialize a QImage, so we can maniputalte the pixels
 		self.renderImage = QImage(width,height,4) #QImage.Format_RGB32
@@ -232,41 +231,44 @@ class RenderWindow:
 	def setPixel(self,x,y,color):
 		self.renderImage.setPixel(x,y,QColor(color.x,color.y,color.z).rgba())
 
-	def startRender(self,width,height,objects,cam):
+	def getBucket(self,processCnt):
+		#input the process count, return the starting point of each bucket
+		startLine = []
+		bucketHeight = int(self.height / processCnt)
+		for i in range(0,processCnt):
+			startLine.append(bucketHeight * i)
+
+		return startLine, bucketHeight
+
+	def startRender(self,objects,cam):
 		#start render in a new thread
-		self.startLine = [0,100,200,300,400,500]
-		self.jobs = []
+		processCnt = multiprocessing.cpu_count()
+		startLine,bucketHeight = self.getBucket(processCnt)
+		jobs = []
 		jobsQueue = multiprocessing.Queue()
-		for i in range(6):
-			a = RenderProcess(jobsQueue,i,width,height,self.startLine[i],objects,cam)
-			self.jobs.append(a)
+		for i in range(processCnt):
+			job = RenderProcess(jobsQueue,i,self.width,self.height,startLine[i],bucketHeight,objects,cam)
+			jobs.append(job)
 			
-		for each in self.jobs: 
+		for each in jobs: 
 			each.start()
 
-		bucketImages = [jobsQueue.get() for each in self.jobs]
+		bucketArrays = [jobsQueue.get() for each in jobs]
 
 		# for each in self.jobs: #This has to be after Queue.get() or simply don't join
 		# 	each.join()
 
-		bucketImages.sort(key = self.getOrderKey)
-		bucketImages = [r[1] for r in bucketImages]
+		bucketArrays.sort(key = self.getOrderKey)
+		bucketArrays = [r[1] for r in bucketArrays]
+
+		#merge the arrays into one
+		mergedArrays = numpy.vstack(bucketArrays) #merged along second axis
+		#numpy.require(mergedArrays,numpy.float32,"C")
 		
-		# cnt = 0
-		# for each in bucketImages:
-		# 	each.save("test_"+str(cnt)+".jpg")
-		# 	cnt +=1
-		#Merge all the buckets
-		mergedImage = Image.new('RGB',(600,600),"black")
+		#convert array to QImage
+		newImage = QImage(mergedArrays.data,self.width,self.height,mergedArrays.strides[0],QImage.Format_RGB888)
 
-		for j in range(0,len(bucketImages)):
-			mergedImage.paste(bucketImages[j],(0,j*100))
-
-		mergedImage.save("testmerge.png")
-		#qim =ImageQt(mergedImage)
-		#self.update(qim)
-
-
+		self.update(newImage)
 
 	def getOrderKey(self,elem):
 		return elem[0]
@@ -275,7 +277,7 @@ class RenderWindow:
 		#update the render view, note the render is in another thread
 		self.pixmap = QPixmap().fromImage(image)
 		self.graphicItem.setPixmap(self.pixmap)
-		self.renderImage.save("test.png")
+		image.save("test.png")
 		print("Render finished")
 
 	def getPixColor(self,pixData):
@@ -303,7 +305,7 @@ def main():
 	objects = ObjectList([sphere01,sphere02,plane01,plane02,plane03,plane04,plane05])
 	cam = Camera(Vector(0,0,0),Vector(0,0,1),60)
 
-	renderView.startRender(width,height,objects,cam)
+	renderView.startRender(objects,cam)
 	
 	
 	sys.exit(renderView.app.exec_())
