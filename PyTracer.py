@@ -9,8 +9,8 @@
 import sys, math, random, multiprocessing
 from PyQt5.QtWidgets import QApplication, QWidget, QGraphicsScene, QGraphicsView, QGraphicsPixmapItem
 from PyQt5.QtGui import QImage, QPixmap, QColor
-from PyQt5.QtCore import pyqtSignal,pyqtSlot
 from PIL import Image
+from PIL.ImageQt import ImageQt
 
 #------------------------
 class Vector:
@@ -163,15 +163,16 @@ class Light:
 class RenderProcess(multiprocessing.Process):
 	#setPixSignal = pyqtSignal(list) #set pixel signal to UI
 
-	def __init__(self,outputQ,width,height,startLine,objects,cam):
+	def __init__(self,outputQ,order,width,height,startLine,objects,cam):
 		multiprocessing.Process.__init__(self)
 		self.outputQ = outputQ
+		self.order = order
 		self.width = width
 		self.height = height
 		self.startLine = startLine
 		self.objects = objects
 		self.cam = cam
-		self.bucketImage = Image.new('RGB',(self.width,100),"black")
+		self.bucketImage = Image.new('RGB',(self.width,100),"black") #QImage pickling is not supported at the moment. PIL is a way around.
 		
 	def run(self):
 		bucketPixels = self.bucketImage.load()
@@ -196,7 +197,7 @@ class RenderProcess(multiprocessing.Process):
 				bucketPixels[i,j%100] = (int(averageCol.x),int(averageCol.y),int(averageCol.z))
 
 		#self.bucketImage.save("test2"+ multiprocessing.current_process().name + ".png")
-		self.outputQ.put(self.bucketImage)
+		self.outputQ.put((self.order,self.bucketImage))
 		print("Bucket Finished")
 
 	def getColor(self,hit,hitResult):
@@ -237,29 +238,38 @@ class RenderWindow:
 		self.jobs = []
 		jobsQueue = multiprocessing.Queue()
 		for i in range(6):
-			a = RenderProcess(jobsQueue,width,height,self.startLine[i],objects,cam)
+			a = RenderProcess(jobsQueue,i,width,height,self.startLine[i],objects,cam)
 			self.jobs.append(a)
 			
-
 		for each in self.jobs: 
 			each.start()
 
-		# for each in self.jobs:
+		bucketImages = [jobsQueue.get() for each in self.jobs]
+
+		# for each in self.jobs: #This has to be after Queue.get() or simply don't join
 		# 	each.join()
 
-		bucketImages = []
-		for each in self.jobs:
-			bucketImages.append(jobsQueue.get())
+		bucketImages.sort(key = self.getOrderKey)
+		bucketImages = [r[1] for r in bucketImages]
 		
+		# cnt = 0
+		# for each in bucketImages:
+		# 	each.save("test_"+str(cnt)+".jpg")
+		# 	cnt +=1
 		#Merge all the buckets
+		mergedImage = Image.new('RGB',(600,600),"black")
 
-		for each in bucketImages:
-			each.show()
-		#bucketImages[0].save('test_03.png')
-		#self.painter.drawImage(0,0,bucketImages[0])
-	
-		#self.update(bucketImages[0])
+		for j in range(0,len(bucketImages)):
+			mergedImage.paste(bucketImages[j],(0,j*100))
 
+		mergedImage.save("testmerge.png")
+		#qim =ImageQt(mergedImage)
+		#self.update(qim)
+
+
+
+	def getOrderKey(self,elem):
+		return elem[0]
 
 	def update(self,image):
 		#update the render view, note the render is in another thread
