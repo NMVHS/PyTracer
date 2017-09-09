@@ -13,25 +13,28 @@ class RenderProcess(multiprocessing.Process):
 		self.height = height
 		self.startLine = startLine
 		self.bucketHeight = bucketHeight
-		self.objects = objects
+		self.objects = objects #includes geometries and lights
 		self.cam = cam
 		#QImage pickling is not supported at the moment. PIL doesn't support 32 bit RGB.
 		
 	def run(self):
+		#bucket rendered color data is stored in an array
 		bucketArray = numpy.ndarray(shape=(self.bucketHeight,self.width,3),dtype = numpy.uint8)
+
 		#----shoot rays-------
 		for j in range(self.startLine,self.startLine + self.bucketHeight):
 			for i in range(0,self.width):
 				#shoot 4 rays each pixel for anti-aliasing
 				col = Vector(0,0,0)
-				AAsample = 4
+				AAsample = 1
 				for k in range(0,AAsample):
 					rayDir = Vector(i + random.random() - self.width/2, -j - random.random() + self.height/2, 
 									-0.5*self.width/math.tan(math.radians(self.cam.angle/2))) #Warning!!!!! Convert to radian!!!!!!!
 					ray = Ray(self.cam.pos,rayDir)
 
 					#----check intersections with spheres----
-					hitResult = [] #stores a list of data of intersections
+					#hitResult is a list storing calculated data [hit_t, hit_pos,hit_normal]
+					hitResult = [] 
 					hitBool = self.objects.getClosestIntersection(ray,hitResult)
 
 					col = col + self.getColor(hitBool,hitResult)
@@ -45,7 +48,21 @@ class RenderProcess(multiprocessing.Process):
 	def getColor(self,hit,hitResult):
 		#hit is bool,
 		if hit == True:
-			remapHitNormal = (hitResult[2]+Vector(1,1,1))*0.5
-			return Vector(255*remapHitNormal.x,255*remapHitNormal.y,255*remapHitNormal.z)
+			#shadow ray---------temp implementation-----
+			lightPos = self.objects.lights[0].pos
+			shadowRayDir = lightPos - hitResult[1]
+			offsetOrigin = hitResult[1] + shadowRayDir.normalized() * 0.0001 #slightly offset the ray start point because the origin itself is a root
+			shadowRay = Ray(offsetOrigin,shadowRayDir)
+			temp_t = shadowRayDir.length()
+			shadowRayResult = [temp_t]
+			shadowBool = self.objects.getClosestIntersection(shadowRay,shadowRayResult)
+			if shadowBool:
+				return Vector(0,0,0)
+			else:
+				return Vector(255,255,255) * numpy.interp(temp_t,[0,200],[1,0])
+			#------------------------------------------
+
+			# remapHitNormal = (hitResult[2]+Vector(1,1,1))*0.5
+			# return Vector(255*remapHitNormal.x,255*remapHitNormal.y,255*remapHitNormal.z)
 		else:
 			return Vector(0,0,0)

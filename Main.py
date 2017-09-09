@@ -32,12 +32,14 @@ def main():
 	#important! This is a right handed coordinate system!
 	sphere01 = Sphere(Vector(-15,-30,-136),20)
 	sphere02 = Sphere(Vector(10,-20,-136),30)
-	plane01 = Plane(Vector(0,-50,-136),10,Vector(0,1,0))
-	plane02 = Plane(Vector(-50,0,-136),10,Vector(1,0,0))
-	plane03 = Plane(Vector(0,0,-186),10,Vector(0,0,1))
-	plane04 = Plane(Vector(50,0,-136),10,Vector(-1,0,0))
-	plane05 = Plane(Vector(0,50,-136),10,Vector(0,-1,0))
-	objects = ObjectList([sphere01,sphere02,plane01,plane02,plane03,plane04,plane05])
+	plane01 = Plane(Vector(0,-50,-136),10,Vector(0,1,0)) #bottom wall
+	plane02 = Plane(Vector(-50,0,-136),10,Vector(1,0,0)) #left wall
+	plane03 = Plane(Vector(0,0,-186),10,Vector(0,0,1)) #back wall
+	plane04 = Plane(Vector(50,0,-136),10,Vector(-1,0,0)) #right wall
+	plane05 = Plane(Vector(0,50,-136),10,Vector(0,-1,0)) #top wall
+	light01 = Light(Vector(0,40,-136),5) #light source on the top
+
+	objects = ObjectList({"geometry":[sphere01,sphere02,plane01,plane02,plane03,plane04,plane05],"light":[light01]})
 	cam = Camera(Vector(0,0,0),Vector(0,0,1),60)
 
 	renderView.startRender(objects,cam)

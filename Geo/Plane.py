@@ -1,12 +1,12 @@
 import math
-from Vector import Vector
-from Ray import Ray
+
 
 class Plane:
 	def __init__(self,pos,size,normal):
 		self.pos = pos
 		self.size = size
 		self.normal = normal
+		self.epsilon = 0.0001
 
 	def type(self):
 		return "Plane"
