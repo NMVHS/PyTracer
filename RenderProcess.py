@@ -59,7 +59,7 @@ class RenderProcess(multiprocessing.Process):
 			if shadowBool:
 				return Vector(0,0,0)
 			else:
-				return Vector(255,255,255) * numpy.interp(temp_t,[0,200],[1,0])
+				return Vector(255,255,255) * numpy.interp(1/math.pow(temp_t,2),[0,0.001],[0,1])
 			#------------------------------------------
 
 			# remapHitNormal = (hitResult[2]+Vector(1,1,1))*0.5
