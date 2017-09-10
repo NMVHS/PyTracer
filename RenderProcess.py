@@ -51,6 +51,10 @@ class RenderProcess(multiprocessing.Process):
 			#shadow ray---------temp implementation-----
 			lightPos = self.objects.lights[0].pos
 			shadowRayDir = lightPos - hitResult[1]
+			lambert = hitResult[2].dot(shadowRayDir.normalized())
+			if lambert <0:
+				lambert = 0
+
 			offsetOrigin = hitResult[1] + shadowRayDir.normalized() * 0.0001 #slightly offset the ray start point because the origin itself is a root
 			shadowRay = Ray(offsetOrigin,shadowRayDir)
 			temp_t = shadowRayDir.length()
@@ -59,9 +63,10 @@ class RenderProcess(multiprocessing.Process):
 			if shadowBool:
 				return Vector(0,0,0)
 			else:
-				return Vector(255,255,255) * numpy.interp(1/math.pow(temp_t,2),[0,0.001],[0,1])
+				return Vector(255,255,255) * numpy.interp(lambert/math.pow(temp_t,2),[0,0.001],[0,1])
 			#------------------------------------------
 
+			#world normal---------------------------------------------
 			# remapHitNormal = (hitResult[2]+Vector(1,1,1))*0.5
 			# return Vector(255*remapHitNormal.x,255*remapHitNormal.y,255*remapHitNormal.z)
 		else:

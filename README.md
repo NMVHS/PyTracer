@@ -2,8 +2,6 @@
 
 ## Ray tracing with Python3 and PyQt5
 
-## shawn / Aug 2017
-
 ![alt text](test.png)
 
 * Finished:
@@ -13,17 +11,22 @@
   * Plane intersection
   * Separate render thread from window
   * Patch render / multiprocessing
+  * Point light
+  * Shadow Ray
 
 * Need improvement:
   * Anti-aliasing
-  * Patch render
+  * Patch render / multiprocessing
 
 * To-do:
-  * Add light
-  * Shadow
+  * Area light
   * Radiance
+  * Render Equation integration
+  * Recursive tracing
   * Cube Intersection
   * Triange intersection
+  * Quad intersection
+  * Scene description
   * Restucture the whole thing
 
 
