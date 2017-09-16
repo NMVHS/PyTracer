@@ -21,7 +21,7 @@
     * Radiance unit
 
   * Material:
-    * Diffuse / Lambert
+    * Diffuse / Lambert [✓]
     * Mirror
     * Glossy
     * Glass

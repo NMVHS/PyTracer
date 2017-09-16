@@ -33,7 +33,7 @@ class RenderProcess(multiprocessing.Process):
 					ray = Ray(self.cam.pos,rayDir)
 
 					#----check intersections with spheres----
-					#hitResult is a list storing calculated data [hit_t, hit_pos,hit_normal]
+					#hitResult is a list storing calculated data [hit_t, hit_pos,hit_normal,objectId]
 					hitResult = []
 					hitBool = self.scene.getClosestIntersection(ray,hitResult)
 
@@ -70,8 +70,9 @@ class RenderProcess(multiprocessing.Process):
 			if not shadowBool:
 				litColor = litColor + eachLight.color * (eachLight.intensity * lambert / (4*math.pi*math.pow(temp_t,2)))
 
+		matColor = self.scene.getObjectById(hitResult[3]).material.diffuseColor
 
-		return litColor
+		return Vector(matColor.x * litColor.x, matColor.y * litColor.y,matColor.z * litColor.z)
 
 
 	def gammaCorrect(self,color):

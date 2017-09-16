@@ -1,9 +1,10 @@
 import math
-from Geometry import Geometry
+from Geo.Geometry import Geometry
+from Geo.Material import Material
 
 class Sphere(Geometry):
-	def __init__(self,pos,radius):
-		Geometry.__init__(self)
+	def __init__(self,pos,radius,material=Material()):
+		super().__init__(material)
 		self.pos = pos #pos is a vector
 		self.radius = float(radius) #radius is a scalar
 		self.epsilon = 0.0001
@@ -47,5 +48,5 @@ class Sphere(Geometry):
 			hitPos = ray.origin + ray.dir*t
 			hitNormal = (hitPos - self.pos).normalized()
 
-			result.extend([t,hitPos,hitNormal])
+			result.extend([t,hitPos,hitNormal,self.objectId])
 			return True

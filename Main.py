@@ -31,23 +31,25 @@ def main():
 
 	renderView = RenderWindow(width,height)
 
+	redLambert = Material(diffuseColor=Vector(1,0,0))
+	blueLambert = Material(diffuseColor=Vector(0,0,1))
 	#-------Scene--------
 	#important! This is a right handed coordinate system!
 	sphere01 = Sphere(Vector(-15,-30,-136),20)
 	sphere02 = Sphere(Vector(10,-20,-136),30)
 	plane01 = Plane(Vector(0,-50,-136),10,Vector(0,1,0)) #bottom wall
-	plane02 = Plane(Vector(-50,0,-136),10,Vector(1,0,0)) #left wall
+	plane02 = Plane(Vector(-50,0,-136),10,Vector(1,0,0),redLambert) #left wall
 	plane03 = Plane(Vector(0,0,-186),10,Vector(0,0,1)) #back wall
-	plane04 = Plane(Vector(50,0,-136),10,Vector(-1,0,0)) #right wall
+	plane04 = Plane(Vector(50,0,-136),10,Vector(-1,0,0),blueLambert) #right wall
 	plane05 = Plane(Vector(0,50,-136),10,Vector(0,-1,0)) #top wall
 	light01 = Light(Vector(0,40,-136),5) #light source on the top
 	light02 = Light(Vector(-20,40,-100),5)
 
 	newScene = Scene({"geometry":[sphere01,sphere02,plane01,plane02,plane03,plane04,plane05],"light":[light01,light02]})
-	newScene.checkObjectId()
+
 	cam = Camera(Vector(0,0,0),Vector(0,0,1),60)
 
-	#renderView.startRender(newScene,cam)
+	renderView.startRender(newScene,cam)
 
 
 	sys.exit(renderView.app.exec_())

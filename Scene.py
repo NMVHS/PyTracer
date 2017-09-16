@@ -6,13 +6,21 @@ class Scene:
 
 	def checkObjectId(self):
 		for each in self.geo:
-			print(each.ObjectId)
+			print(each.objectId)
 
 	def shuffleObjectId(self):
 		objId = 0
 		for eachObj in self.geo:
 			eachObj.objectId = objId
-			ObjId += 1
+			objId += 1
+
+	def checkSceneMaterial(self):
+		for each in self.geo:
+			mat = each.material.diffuseColor
+			print(mat)
+
+	def getObjectById(self,id):
+		return self.geo[id]
 
 	def getClosestIntersection(self,ray,result):
 		#when checking secondary intersections, eg shadow ray
