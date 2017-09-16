@@ -19,6 +19,10 @@ class Scene:
 			mat = each.material.diffuseColor
 			print(mat)
 
+	def checkLightIntensity(self):
+		for each in self.lights:
+			print(each.intensity)
+
 	def getObjectById(self,id):
 		return self.geo[id]
 

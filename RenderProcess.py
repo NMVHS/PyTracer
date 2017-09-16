@@ -46,33 +46,51 @@ class RenderProcess(multiprocessing.Process):
 		print("Bucket Finished - " + multiprocessing.current_process().name)
 
 	def getColor(self,hit,hitResult):
-		#hit is bool,
 		if hit:
-			return self.directLighting(hitResult)
+			hitPointColor = Vector(0,0,0)
+			hitPointColor = hitPointColor + self.getHitPointColor(hitResult)
 
+			#Recurvsive path tracing--------------------
+			#Generation random derections
+
+
+			return hitPointColor
 		else:
+			#Alpha black
 			return Vector(0,0,0)
 
-	def directLighting(self,hitResult):
+	def getRandomDirection(self):
+		#Generate random direction based on a unit hemisphere in Cartesian System
+		theta = ramdom.random()
+		phi = random.random()
+
+	def getHitPointColor(self,hitResult):
 		litColor = Vector(0,0,0) #color accumulated after being lit
 		#iterate through all the lights using shadow ray, check if object is in shadow
 
 		for eachLight in self.scene.lights:
-			shadowRayDir = eachLight.pos - hitResult[1]
- 			#lambert is the cosine
-			lambert = hitResult[2].dot(shadowRayDir.normalized())
-			lambert = max(lambert,0) #clamp the values below 0
-			offsetOrigin = hitResult[1] + shadowRayDir.normalized() * 0.0001 #slightly offset the ray start point because the origin itself is a root
-			shadowRay = Ray(offsetOrigin,shadowRayDir)
-			temp_t = shadowRayDir.length() #length form hit point to light
-			shadowRayResult = [temp_t]
-			shadowBool = self.scene.getClosestIntersection(shadowRay,shadowRayResult)
-			if not shadowBool:
-				litColor = litColor + eachLight.color * (eachLight.intensity * lambert / (4*math.pi*math.pow(temp_t,2)))
+			for i in range(eachLight.samples):
+				if eachLight.type == 'Area':
+					shadowRayDir = eachLight.getRandomSample() - hitResult[1]
+				else:
+					shadowRayDir = eachLight.pos - hitResult[1]
+	 			#lambert is the cosine
+				lambert = hitResult[2].dot(shadowRayDir.normalized())
+				lambert = max(lambert,0) #clamp the values below 0
+				offsetOrigin = hitResult[1] + shadowRayDir.normalized() * 0.0001 #slightly offset the ray start point because the origin itself is a root
+				shadowRay = Ray(offsetOrigin,shadowRayDir)
+				temp_t = shadowRayDir.length() #length form hit point to light
+				shadowRayResult = [temp_t]
+				inShadow = self.scene.getClosestIntersection(shadowRay,shadowRayResult)
+				if not inShadow:
+					litColor = litColor + eachLight.color * (eachLight.intensity * lambert / (4*math.pi*math.pow(temp_t,2)))
+
+			litColorAvg = litColor / eachLight.samples * 2 * math.pi
 
 		matColor = self.scene.getObjectById(hitResult[3]).material.diffuseColor
 
-		return Vector(matColor.x * litColor.x, matColor.y * litColor.y,matColor.z * litColor.z)
+		return Vector(matColor.x * litColorAvg.x, matColor.y * litColorAvg.y,matColor.z * litColorAvg.z)
+
 
 
 	def gammaCorrect(self,color):
