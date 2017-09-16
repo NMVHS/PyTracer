@@ -30,13 +30,8 @@ class Sphere(Geometry):
 			t1 = (-b - math.sqrt(delta)) / (2*a)
 
 			if t0>0 and t1>0: #root has to be positive, otherwise it's behind the ray origin
-				if t0 < t1: #Important!!!! We need the closest t, means the smallest t!!!!!!!!!!!!!
-					t = t0
-				else:
-					t = t1
-
-				if t >= closestHit: #check if this t is behind the closest t detected so far
-					return False
+				t = min(t0,t1) #Important!!!! We need the closest t, means the smallest t!!!!!!!!!!!!!
+				if t >= closestHit: return False #check if this t is behind the closest t detected so far
 			elif t0 > 0 and t1 <= 0:
 				t = t0
 			elif t1 > 0 and t0 <= 0:
