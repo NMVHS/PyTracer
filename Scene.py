@@ -1,7 +1,18 @@
 class Scene:
 	def __init__(self,objects):
 		self.geo = objects['geometry'] #a list of objects, can include spheres, planes, and others
+		self.shuffleObjectId()
 		self.lights = objects['light']
+
+	def checkObjectId(self):
+		for each in self.geo:
+			print(each.ObjectId)
+
+	def shuffleObjectId(self):
+		objId = 0
+		for eachObj in self.geo:
+			eachObj.objectId = objId
+			ObjId += 1
 
 	def getClosestIntersection(self,ray,result):
 		#when checking secondary intersections, eg shadow ray

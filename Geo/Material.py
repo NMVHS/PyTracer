@@ -1,4 +1,4 @@
-from Geo.Vector import Vector
+from Vector import Vector
 
 class Material:
     def __init__(self,diffuseColor=Vector(0.18,0.18,0.18),diffuseWeight = 1.0,

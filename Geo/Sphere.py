@@ -1,7 +1,9 @@
 import math
+from Geometry import Geometry
 
-class Sphere:
+class Sphere(Geometry):
 	def __init__(self,pos,radius):
+		Geometry.__init__(self)
 		self.pos = pos #pos is a vector
 		self.radius = float(radius) #radius is a scalar
 		self.epsilon = 0.0001

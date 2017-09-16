@@ -1,7 +1,9 @@
 import math
+from Geometry import Geometry
 
-class Plane:
+class Plane(Geometry):
 	def __init__(self,pos,size,normal):
+		Geometry.__init__(self)
 		self.pos = pos
 		self.size = size
 		self.normal = normal
