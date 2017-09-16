@@ -1,6 +1,5 @@
 import math
 
-
 class Plane:
 	def __init__(self,pos,size,normal):
 		self.pos = pos

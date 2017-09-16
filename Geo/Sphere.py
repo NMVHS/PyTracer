@@ -1,6 +1,5 @@
 import math
 
-
 class Sphere:
 	def __init__(self,pos,radius):
 		self.pos = pos #pos is a vector

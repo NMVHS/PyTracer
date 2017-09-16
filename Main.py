@@ -14,9 +14,10 @@ from Geo.Vector import Vector
 from Geo.Ray import Ray
 from Geo.Sphere import Sphere
 from Geo.Plane import Plane
+from Geo.Material import Material
 from Camera import Camera
 from Light import Light
-from ObjectList import ObjectList
+from Scene import Scene
 from RenderWindow import RenderWindow
 from RenderProcess import RenderProcess
 
@@ -40,10 +41,10 @@ def main():
 	light01 = Light(Vector(0,40,-136),5) #light source on the top
 	light02 = Light(Vector(-20,40,-100),5)
 
-	objects = ObjectList({"geometry":[sphere01,sphere02,plane01,plane02,plane03,plane04,plane05],"light":[light01,light02]})
+	newScene = Scene({"geometry":[sphere01,sphere02,plane01,plane02,plane03,plane04,plane05],"light":[light01,light02]})
 	cam = Camera(Vector(0,0,0),Vector(0,0,1),60)
 
-	renderView.startRender(objects,cam)
+	renderView.startRender(newScene,cam)
 
 
 	sys.exit(renderView.app.exec_())

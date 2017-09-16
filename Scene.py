@@ -1,4 +1,4 @@
-class ObjectList:
+class Scene:
 	def __init__(self,objects):
 		self.geo = objects['geometry'] #a list of objects, can include spheres, planes, and others
 		self.lights = objects['light']
@@ -29,4 +29,3 @@ class ObjectList:
 
 		result.extend(closestHitResult)
 		return hitBool
-

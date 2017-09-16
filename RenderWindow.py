@@ -18,7 +18,7 @@ class RenderWindow:
 		#-----initialize a QImage, so we can maniputalte the pixels
 		self.renderImage = QImage(width,height,4) #QImage.Format_RGB32
 		self.graphic = QGraphicsScene(0,0,width,height,self.window)
-		
+
 		self.pixmap = QPixmap().fromImage(self.renderImage)
 		self.graphicItem = self.graphic.addPixmap(self.pixmap)
 
@@ -38,17 +38,17 @@ class RenderWindow:
 
 		return startLine, bucketHeight
 
-	def startRender(self,objects,cam):
+	def startRender(self,scene,cam):
 		#start render in a new thread
 		processCnt = multiprocessing.cpu_count()
 		startLine,bucketHeight = self.getBucket(processCnt)
 		jobs = []
 		jobsQueue = multiprocessing.Queue()
 		for i in range(processCnt):
-			job = RenderProcess(jobsQueue,i,self.width,self.height,startLine[i],bucketHeight,objects,cam)
+			job = RenderProcess(jobsQueue,i,self.width,self.height,startLine[i],bucketHeight,scene,cam)
 			jobs.append(job)
-			
-		for each in jobs: 
+
+		for each in jobs:
 			each.start()
 
 		bucketArrays = [jobsQueue.get() for each in jobs]
@@ -62,7 +62,7 @@ class RenderWindow:
 		#merge the arrays into one
 		mergedArrays = numpy.vstack(bucketArrays) #merged along second axis
 		#numpy.require(mergedArrays,numpy.float32,"C")
-		
+
 		#convert array to QImage
 		newImage = QImage(mergedArrays.data,self.width,self.height,mergedArrays.strides[0],QImage.Format_RGB888)
 

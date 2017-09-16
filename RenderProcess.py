@@ -1,11 +1,11 @@
 import multiprocessing, math, random, numpy
 from Geo.Vector import Vector
 from Geo.Ray import Ray
-from ObjectList import ObjectList
+from Scene import Scene
 
 
 class RenderProcess(multiprocessing.Process):
-	def __init__(self,outputQ,order,width,height,startLine,bucketHeight,objects,cam):
+	def __init__(self,outputQ,order,width,height,startLine,bucketHeight,scene,cam):
 		multiprocessing.Process.__init__(self)
 		self.outputQ = outputQ
 		self.order = order
@@ -13,7 +13,7 @@ class RenderProcess(multiprocessing.Process):
 		self.height = height
 		self.startLine = startLine
 		self.bucketHeight = bucketHeight
-		self.objects = objects #includes geometries and lights
+		self.scene = scene #includes geometries and lights
 		self.cam = cam
 		#QImage pickling is not supported at the moment. PIL doesn't support 32 bit RGB.
 
@@ -35,7 +35,7 @@ class RenderProcess(multiprocessing.Process):
 					#----check intersections with spheres----
 					#hitResult is a list storing calculated data [hit_t, hit_pos,hit_normal]
 					hitResult = []
-					hitBool = self.objects.getClosestIntersection(ray,hitResult)
+					hitBool = self.scene.getClosestIntersection(ray,hitResult)
 
 					col = col + self.getColor(hitBool,hitResult)
 
@@ -57,7 +57,7 @@ class RenderProcess(multiprocessing.Process):
 		litColor = Vector(0,0,0) #color accumulated after being lit
 		#iterate through all the lights using shadow ray, check if object is in shadow
 
-		for eachLight in self.objects.lights:
+		for eachLight in self.scene.lights:
 			shadowRayDir = eachLight.pos - hitResult[1]
  			#lambert is the cosine
 			lambert = hitResult[2].dot(shadowRayDir.normalized())
@@ -66,9 +66,10 @@ class RenderProcess(multiprocessing.Process):
 			shadowRay = Ray(offsetOrigin,shadowRayDir)
 			temp_t = shadowRayDir.length() #length form hit point to light
 			shadowRayResult = [temp_t]
-			shadowBool = self.objects.getClosestIntersection(shadowRay,shadowRayResult)
+			shadowBool = self.scene.getClosestIntersection(shadowRay,shadowRayResult)
 			if not shadowBool:
 				litColor = litColor + eachLight.color * (eachLight.intensity * lambert / (4*math.pi*math.pow(temp_t,2)))
+
 
 		return litColor
 
