@@ -10,8 +10,8 @@ import sys, math, random, multiprocessing, numpy
 
 
 #------------------------
-from Vector import Vector
-from Ray import Ray
+from Geo.Vector import Vector
+from Geo.Ray import Ray
 from Geo.Sphere import Sphere
 from Geo.Plane import Plane
 from Camera import Camera
@@ -38,13 +38,14 @@ def main():
 	plane04 = Plane(Vector(50,0,-136),10,Vector(-1,0,0)) #right wall
 	plane05 = Plane(Vector(0,50,-136),10,Vector(0,-1,0)) #top wall
 	light01 = Light(Vector(0,40,-136),5) #light source on the top
+	light02 = Light(Vector(-20,40,-100),5)
 
-	objects = ObjectList({"geometry":[sphere01,sphere02,plane01,plane02,plane03,plane04,plane05],"light":[light01]})
+	objects = ObjectList({"geometry":[sphere01,sphere02,plane01,plane02,plane03,plane04,plane05],"light":[light01,light02]})
 	cam = Camera(Vector(0,0,0),Vector(0,0,1),60)
 
 	renderView.startRender(objects,cam)
-	
-	
+
+
 	sys.exit(renderView.app.exec_())
 
 

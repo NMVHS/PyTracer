@@ -1,4 +1,4 @@
-from Vector import Vector
+from Geo.Vector import Vector
 
 class Camera:
 	def __init__(self,pos,direction,angle):
