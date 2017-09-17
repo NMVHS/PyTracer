@@ -87,16 +87,16 @@ class RenderProcess(multiprocessing.Process):
 					shadowRayDir = eachLight.pos - hitResult[1]
 	 			#lambert is the cosine
 				lambert = hitResult[2].dot(shadowRayDir.normalized())
-				lambert = max(lambert,0) #clamp the values below 0
-				offsetOrigin = hitResult[1] + shadowRayDir.normalized() * 0.0001 #slightly offset the ray start point because the origin itself is a root
-				shadowRay = Ray(offsetOrigin,shadowRayDir)
-				temp_t = shadowRayDir.length() #length form hit point to light
-				shadowRayResult = [temp_t]
-				inShadow = self.scene.getClosestIntersection(shadowRay,shadowRayResult)
-				if not inShadow:
-					litColor = litColor + eachLight.color * (eachLight.intensity * lambert / (4*math.pi*math.pow(temp_t,2)))
+				if lambert > 0:
+					offsetOrigin = hitResult[1] + shadowRayDir.normalized() * 0.0001 #slightly offset the ray start point because the origin itself is a root
+					shadowRay = Ray(offsetOrigin,shadowRayDir)
+					temp_t = shadowRayDir.length() #length form hit point to light
+					shadowRayResult = [temp_t]
+					inShadow = self.scene.getClosestIntersection(shadowRay,shadowRayResult)
+					if not inShadow:
+						litColor = litColor + eachLight.color * (eachLight.intensity * lambert / (4*math.pi*math.pow(temp_t,2)))
 
-			litColorAvg = litColor / eachLight.samples * 2 * math.pi
+			litColorAvg = litColor / eachLight.samples
 
 		matColor = self.scene.getObjectById(hitResult[3]).material.diffuseColor
 
