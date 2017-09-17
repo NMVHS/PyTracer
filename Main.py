@@ -42,7 +42,7 @@ def main():
 	plane03 = Plane(Vector(0,0,-186),10,Vector(0,0,1)) #back wall
 	plane04 = Plane(Vector(50,0,-136),10,Vector(-1,0,0),blueLambert) #right wall
 	plane05 = Plane(Vector(0,50,-136),10,Vector(0,-1,0)) #top wall
-	light01 = DiskLight(Vector(0,40,-136),20) #light source on the top
+	light01 = DiskLight(Vector(0,40,-136),40) #light source on the top
 	# light02 = PointLight(Vector(-20,40,-100))
 	# light03 = PointLight(Vector(20,30,-90))
 

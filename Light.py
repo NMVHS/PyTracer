@@ -2,7 +2,8 @@ from Geo.Vector import Vector
 import random, math
 
 class Light:
-	#This is a base class for all types of lights, holds the common light attributes
+	#This is a base class for all types of lights which holds the common light attributes
+	#All types of light should inherit this class
 	def __init__(self,pos,intensity,color):
 		self.pos = pos
 		self.intensity = intensity
@@ -17,14 +18,21 @@ class PointLight(Light):
 
 
 class DiskLight(Light):
-	def __init__(self,pos,radius,intensity = 5000, color = Vector(1,1,1)):
+	def __init__(self,pos,radius,intensity = 5000, color = Vector(1,1,1),samples = 8):
 		super().__init__(pos,intensity,color)
 		self.type = 'Area'
 		self.radius = radius
-		self.samples = 16
+		self.samples = samples
 
 	def getRandomSample(self):
 		#generate a sample point on the disk
 		theta = random.random() * math.pi #range [0,2pi)
 		randPointOnDisk =self.pos +  Vector(math.cos(theta) * self.radius,0,math.sin(theta) * self.radius)
 		return randPointOnDisk
+
+class RectangleLight(Light):
+	def __init__(self,pos,radius,intensity = 500, color = Vector(1,1,1), samples = 8):
+		super().__init__(pos,intensity,color)
+		self.type = 'Area'
+		self.radius = radius
+		self.samples = samples

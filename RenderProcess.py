@@ -21,23 +21,34 @@ class RenderProcess(multiprocessing.Process):
 		#bucket rendered color data is stored in an array
 		bucketArray = numpy.ndarray(shape=(self.bucketHeight,self.width,3),dtype = numpy.uint8)
 
+		#shoot multiple rays each pixel for anti-aliasing
+		AAsample = 4
+		#--deconstruct AAsample---------
+		AAxSubstep = int(math.floor(math.sqrt(AAsample)))
+		AAxSubstepLen = 1.0 / AAxSubstep
+		AAySubstep = int(AAsample / AAxSubstep)
+		AAySubstepLen = 1.0 /AAySubstep
+
 		#----shoot rays-------
 		for j in range(self.startLine,self.startLine + self.bucketHeight):
+			#----Each line of pixels level--------------
 			for i in range(0,self.width):
-				#shoot 4 rays each pixel for anti-aliasing
+				#--------Each pixel level--------------------
 				col = Vector(0,0,0)
-				AAsample = 1
-				for k in range(0,AAsample):
-					rayDir = Vector(i + random.random() - self.width/2, -j - random.random() + self.height/2,
-									-0.5*self.width/math.tan(math.radians(self.cam.angle/2))) #Warning!!!!! Convert to radian!!!!!!!
-					ray = Ray(self.cam.pos,rayDir)
 
-					#----check intersections with spheres----
-					#hitResult is a list storing calculated data [hit_t, hit_pos,hit_normal,objectId]
-					hitResult = []
-					hitBool = self.scene.getClosestIntersection(ray,hitResult)
+				for AAy in range(0,AAySubstep):
+					for AAx in range(0,AAxSubstep):
+						rayDir = Vector(i + AAx * AAxSubstepLen + AAxSubstepLen/2 - self.width/2,
+										-j - AAy * AAySubstepLen - AAySubstepLen/2 + self.height/2,
+										-0.5*self.width/math.tan(math.radians(self.cam.angle/2))) #Warning!!!!! Convert to radian!!!!!!!
+						ray = Ray(self.cam.pos,rayDir)
 
-					col = col + self.getColor(hitBool,hitResult)
+						#----check intersections with spheres----
+						#hitResult is a list storing calculated data [hit_t, hit_pos,hit_normal,objectId]
+						hitResult = []
+						hitBool = self.scene.getClosestIntersection(ray,hitResult)
+
+						col = col + self.getColor(hitBool,hitResult)
 
 				averageCol = self.clampColor(self.gammaCorrect(col / AAsample))
 				bucketArray[j%self.bucketHeight,i] = [int(averageCol.x*255),int(averageCol.y*255),int(averageCol.z*255)]
