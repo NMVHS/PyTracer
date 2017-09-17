@@ -35,10 +35,11 @@ def main():
 	blueLambert = Material(diffuseColor=Vector(0,0,0.9))
 	greenLambert = Material(diffuseColor=Vector(0,0.9,0))
 	whiteLambert = Material(diffuseColor=Vector(0.9,0.9,0.9))
+	
 	#-------Scene--------
 	#important! This is a right handed coordinate system!
-	sphere01 = Sphere(Vector(-15,-30,-136),20)
-	sphere02 = Sphere(Vector(10,-20,-136),30)
+	sphere01 = Sphere(Vector(-15,-30,-136),20,material=whiteLambert)
+	sphere02 = Sphere(Vector(10,-20,-136),30,material=blueLambert)
 	plane01 = Plane(Vector(0,-50,-136),Vector(0,1,0),material=whiteLambert) #bottom wall
 	plane02 = Plane(Vector(-50,0,-136),Vector(1,0,0),material=redLambert) #left wall
 	plane03 = Plane(Vector(0,0,-186),Vector(0,0,1),material=whiteLambert) #back wall
