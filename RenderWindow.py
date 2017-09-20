@@ -1,4 +1,5 @@
 import sys,multiprocessing,numpy
+from datetime import datetime
 from PyQt5.QtWidgets import QApplication, QWidget, QGraphicsScene, QGraphicsView, QGraphicsPixmapItem
 from PyQt5.QtGui import QImage, QPixmap, QColor
 from RenderProcess import RenderProcess
@@ -48,11 +49,15 @@ class RenderWindow:
 			job = RenderProcess(jobsQueue,i,self.width,self.height,startLine[i],bucketHeight,scene,cam)
 			jobs.append(job)
 
+		timerStart = datetime.now()
 		for each in jobs:
 			each.start()
 
 		bucketArrays = [jobsQueue.get() for each in jobs]
 
+		timerEnd = datetime.now()
+		renderTime = timerEnd- timerStart
+		print("Total Render Time: " + str(renderTime))
 		# for each in self.jobs: #This has to be after Queue.get() or simply don't join
 		# 	each.join()
 

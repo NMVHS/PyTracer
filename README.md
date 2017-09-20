@@ -17,7 +17,7 @@
 
   * Light:
     * Point light [✓]
-    * Area light
+    * Area light [Disk light working]
     * Radiance unit
 
   * Material:
@@ -45,4 +45,4 @@
   * Real-time update
   * multiprocessing [Need improvement]
   * Separate thread for window
-  * Render time calculation
+  * Render time calculation [✓]

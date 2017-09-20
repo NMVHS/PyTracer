@@ -1,8 +1,8 @@
 import multiprocessing, math, random, numpy
+from datetime import datetime
 from Geo.Vector import Vector
 from Geo.Ray import Ray
 from Scene import Scene
-
 
 class RenderProcess(multiprocessing.Process):
 	def __init__(self,outputQ,order,width,height,startLine,bucketHeight,scene,cam):
@@ -29,6 +29,7 @@ class RenderProcess(multiprocessing.Process):
 		AAySubstep = int(AAsample / AAxSubstep)
 		AAySubstepLen = 1.0 /AAySubstep
 
+		timerStart = datetime.now()
 		#----shoot rays-------
 		for j in range(self.startLine,self.startLine + self.bucketHeight):
 			#----Each line of pixels level--------------
@@ -54,7 +55,10 @@ class RenderProcess(multiprocessing.Process):
 				bucketArray[j%self.bucketHeight,i] = [int(averageCol.x*255),int(averageCol.y*255),int(averageCol.z*255)]
 
 		self.outputQ.put((self.order,bucketArray))
-		print("Bucket Finished - " + multiprocessing.current_process().name)
+
+		timerEnd = datetime.now()
+		bucketRenderTime = timerEnd - timerStart
+		print("Bucket Finished - " + multiprocessing.current_process().name + " Render time: " + str(bucketRenderTime))
 
 	def getColor(self,hit,hitResult):
 		if hit:

@@ -18,7 +18,7 @@ class PointLight(Light):
 
 
 class DiskLight(Light):
-	def __init__(self,pos,radius,intensity = 5000, color = Vector(1,1,1),samples = 16):
+	def __init__(self,pos,radius,intensity = 5000, color = Vector(1,1,1),samples = 8):
 		super().__init__(pos,intensity,color)
 		self.type = 'Area'
 		self.radius = radius
