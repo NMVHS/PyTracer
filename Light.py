@@ -18,17 +18,23 @@ class PointLight(Light):
 
 
 class DiskLight(Light):
-	def __init__(self,pos,radius,intensity = 5000, color = Vector(1,1,1),samples = 8):
+	def __init__(self,pos,radius,intensity = 5000, color = Vector(1,1,1),samples = 16):
 		super().__init__(pos,intensity,color)
 		self.type = 'Area'
 		self.radius = radius
 		self.samples = samples
+		self.samplePtList = self.getRandomSample()
 
 	def getRandomSample(self):
 		#generate a sample point on the disk
-		theta = random.random() * math.pi #range [0,2pi)
-		randPointOnDisk =self.pos +  Vector(math.cos(theta) * self.radius,0,math.sin(theta) * self.radius)
-		return randPointOnDisk
+		samplePtLi = []
+		for i in range(self.samples):
+			theta = random.random() * math.pi #range [0,2pi)
+			multiplier = random.random() #range [0,1)
+			randPointOnDisk =self.pos +  Vector(math.cos(theta) * self.radius * multiplier,0,math.sin(theta) * self.radius * multiplier)
+			samplePtLi.append(randPointOnDisk)
+
+		return samplePtLi
 
 class RectangleLight(Light):
 	def __init__(self,pos,radius,intensity = 500, color = Vector(1,1,1), samples = 8):
