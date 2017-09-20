@@ -82,7 +82,7 @@ class RenderProcess(multiprocessing.Process):
 		for eachLight in self.scene.lights:
 			for i in range(eachLight.samples):
 				if eachLight.type == 'Area':
-					shadowRayDir = eachLight.samplePtList[i] - hitResult[1]
+					shadowRayDir = eachLight.getRandomSample() - hitResult[1]
 				else:
 					shadowRayDir = eachLight.pos - hitResult[1]
 	 			#lambert is the cosine
@@ -96,7 +96,7 @@ class RenderProcess(multiprocessing.Process):
 					if not inShadow:
 						litColor = litColor + eachLight.color * (eachLight.intensity * lambert / (4*math.pi*math.pow(temp_t,2)))
 
-			litColorAvg = litColor / eachLight.samples * 2 * math.pi 
+			litColorAvg = litColor / eachLight.samples * 2 * math.pi
 
 		matColor = self.scene.getObjectById(hitResult[3]).material.diffuseColor
 
