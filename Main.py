@@ -5,9 +5,7 @@
 #1. keep in mind when using tan/cos/sin, use radians not degrees
 
 #-------------------------
-
 import sys, math, multiprocessing, numpy
-
 
 #------------------------
 from Geo.Vector import Vector
