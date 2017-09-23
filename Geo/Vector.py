@@ -41,12 +41,15 @@ class Vector:
 	def sqr(self):
 		return self.dot(self)
 
+	def colorMult(self,other):
+		return Vector(self.x * other.x, self.y * other.y, self.z * other.z)
+
 	def rot(self,axis,angle,axisVec=None):
+		#input angle is in radians, axisVec has to be a unit vector
 		vectorArray = np.array([self.x,self.y,self.z])
-		#input angle is degree
-		radAngle = math.radians(angle)
-		cosA = math.cos(radAngle)
-		sinA = math.sin(radAngle)
+
+		cosA = math.cos(angle)
+		sinA = math.sin(angle)
 
 
 		if axisVec == None:

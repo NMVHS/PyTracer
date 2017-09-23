@@ -15,6 +15,7 @@ class RenderProcess(multiprocessing.Process):
 		self.bucketHeight = bucketHeight
 		self.scene = scene #includes geometries and lights
 		self.cam = cam
+		self.bias = 0.0001
 		#QImage pickling is not supported at the moment. PIL doesn't support 32 bit RGB.
 
 	def run(self):
@@ -42,14 +43,30 @@ class RenderProcess(multiprocessing.Process):
 						rayDir = Vector(i + AAx * AAxSubstepLen + AAxSubstepLen/2 - self.width/2,
 										-j - AAy * AAySubstepLen - AAySubstepLen/2 + self.height/2,
 										-0.5*self.width/math.tan(math.radians(self.cam.angle/2))) #Warning!!!!! Convert to radian!!!!!!!
-						ray = Ray(self.cam.pos,rayDir)
+						camRay = Ray(self.cam.pos,rayDir)
 
 						#----check intersections with spheres----
 						#hitResult is a list storing calculated data [hit_t, hit_pos,hit_normal,objectId]
 						hitResult = []
-						hitBool = self.scene.getClosestIntersection(ray,hitResult)
+						hitBool = self.scene.getClosestIntersection(camRay,hitResult)
 
-						col = col + self.getColor(hitBool,hitResult)
+						if hitBool:
+							currObj = self.scene.getObjectById(hitResult[3])
+							if currObj.material.reflectionWeight == 1:
+								#If this object's material is perfect mirror
+								incomingVec = (self.cam.pos-hitResult[1]).normalized()
+								reflectRayDir = incomingVec.rot("A",math.radians(180),hitResult[2])
+								biasedOrigin = hitResult[1] + reflectRayDir * self.bias
+								reflectionRay = Ray(biasedOrigin,reflectRayDir)
+								reflectHitResult = []
+								reflectionHitBool = self.scene.getClosestIntersection(reflectionRay,reflectHitResult)
+
+								if reflectionHitBool:
+									col = col + self.getColor(reflectHitResult).colorMult(currObj.material.reflectionColor)
+
+							else:
+								#diffuse material
+								col = col + self.getColor(hitResult)
 
 				averageCol = self.clampColor(self.gammaCorrect(col / AAsample))
 				bucketArray[j%self.bucketHeight,i] = [int(averageCol.x*255),int(averageCol.y*255),int(averageCol.z*255)]
@@ -60,19 +77,17 @@ class RenderProcess(multiprocessing.Process):
 		bucketRenderTime = timerEnd - timerStart
 		print("Bucket Finished - " + multiprocessing.current_process().name + " Render time: " + str(bucketRenderTime))
 
-	def getColor(self,hit,hitResult):
-		if hit:
-			hitPointColor = Vector(0,0,0)
-			hitPointColor = hitPointColor + self.getHitPointColor(hitResult)
+	def getColor(self,hitResult):
 
-			#Recurvsive path tracing--------------------
-			#Generation random derections
+		hitPointColor = Vector(0,0,0)
+		hitPointColor = hitPointColor + self.getHitPointColor(hitResult)
+
+		#Recurvsive path tracing--------------------
+		#Generation random derections
 
 
-			return hitPointColor
-		else:
-			#Alpha black
-			return Vector(0,0,0)
+		return hitPointColor
+
 
 	def getRandomDirection(self):
 		#Generate random direction based on a unit hemisphere in Cartesian System
@@ -81,8 +96,8 @@ class RenderProcess(multiprocessing.Process):
 
 	def getHitPointColor(self,hitResult):
 		litColor = Vector(0,0,0) #color accumulated after being lit
-		#iterate through all the lights using shadow ray, check if object is in shadow
 
+		#iterate through all the lights using shadow ray, check if object is in shadow
 		for eachLight in self.scene.lights:
 			for i in range(eachLight.samples):
 				if eachLight.type == 'Area':
@@ -92,7 +107,7 @@ class RenderProcess(multiprocessing.Process):
 	 			#lambert is the cosine
 				lambert = hitResult[2].dot(shadowRayDir.normalized())
 				if lambert > 0:
-					offsetOrigin = hitResult[1] + shadowRayDir.normalized() * 0.0001 #slightly offset the ray start point because the origin itself is a root
+					offsetOrigin = hitResult[1] + shadowRayDir.normalized() * self.bias #slightly offset the ray start point because the origin itself is a root
 					shadowRay = Ray(offsetOrigin,shadowRayDir)
 					temp_t = shadowRayDir.length() #length form hit point to light
 					shadowRayResult = [temp_t]

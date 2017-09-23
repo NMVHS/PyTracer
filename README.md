@@ -22,7 +22,7 @@
 
   * Material:
     * Diffuse / Lambert [✓]
-    * Mirror
+    * Mirror [✓]
     * Glossy
     * Glass
 
