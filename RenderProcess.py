@@ -22,7 +22,7 @@ class RenderProcess(multiprocessing.Process):
 
 	def run(self):
 		#bucket rendered color data is stored in an array
-		bucketArray = numpy.ndarray(shape=(self.bucketHeight,self.width,3),dtype = numpy.uint8)
+		bucketArray = numpy.ndarray(shape=(self.bucketHeight,self.width,3),dtype = numpy.float)
 
 		#shoot multiple rays each pixel for anti-aliasing
 		AAsample = 1
@@ -70,8 +70,8 @@ class RenderProcess(multiprocessing.Process):
 								#diffuse material
 								col = col + self.getColor(hitResult)
 
-				averageCol = self.clampColor(self.gammaCorrect(col / AAsample))
-				bucketArray[j%self.bucketHeight,i] = [int(averageCol.x*255),int(averageCol.y*255),int(averageCol.z*255)]
+				averageCol = self.clampColor(col / AAsample)
+				bucketArray[j%self.bucketHeight,i] = [averageCol.x,averageCol.y,averageCol.z]
 
 		self.outputQ.put((self.order,bucketArray))
 
@@ -135,6 +135,8 @@ class RenderProcess(multiprocessing.Process):
 			for i in range(eachLight.samples):
 				if eachLight.type == 'Area':
 					shadowRayDir = eachLight.getRandomSample() - hitResult[1]
+					# if shadowRayDir.normalized().dot(eachLight.normal) > 0: #single side area light
+					# 	continue
 				else:
 					shadowRayDir = eachLight.pos - hitResult[1]
 	 			#lambert is the cosine
@@ -148,18 +150,13 @@ class RenderProcess(multiprocessing.Process):
 					if not inShadow:
 						litColor = litColor + eachLight.color * (eachLight.intensity * lambert / (4*math.pi*math.pow(temp_t,2)))
 
-			litColorAvg = litColor / eachLight.samples * 2 * math.pi
+			litColorAvg = litColor / eachLight.samples * eachLight.area
 
 		matColor = self.scene.getObjectById(hitResult[3]).material.diffuseColor
 
 		return Vector(matColor.x * litColorAvg.x, matColor.y * litColorAvg.y,matColor.z * litColorAvg.z)
 
 
-
-	def gammaCorrect(self,color):
-		#apply a 2.2 gamma correction
-		gamma = 2.2
-		return Vector(math.pow(color.x,1/2.2),math.pow(color.y,1/2.2),math.pow(color.z,1/2.2))
 
 	def clampColor(self,color):
 		#clamp the color below (0,0,0) and above(1,1,1), only for saving 8 bit images

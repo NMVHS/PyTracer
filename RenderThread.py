@@ -1,4 +1,5 @@
-import multiprocessing,numpy
+import multiprocessing
+import numpy as np
 from datetime import datetime
 from PyQt5.QtGui import QImage, QColor
 from PyQt5.QtCore import QThread, pyqtSignal, pyqtSlot
@@ -51,15 +52,18 @@ class RenderThread(QThread):
 			each.join()
 
 		timerEnd = datetime.now()
-		renderTime = timerEnd- timerStart
+		renderTime = timerEnd - timerStart
 		print("Total Render Time: " + str(renderTime))
 
 		bucketArrays.sort(key = self.getOrderKey)
 		bucketArrays = [r[1] for r in bucketArrays]
 
 		#merge the arrays into one
-		mergedArrays = numpy.vstack(bucketArrays) #merged along second axis
-		#numpy.require(mergedArrays,numpy.float32,"C")
+		mergedArrays = np.vstack(bucketArrays) #merged along second axis
+		#np.require(mergedArrays,np.float32,"C")
+
+		#Apply 2.2 gamma correction and convert sRGB, in order to convert it to Qimage, array type has to be uint8
+		mergedArrays = (np.power(mergedArrays,1/2.2) * 255).astype(np.uint8)
 
 		#convert array to QImage
 		newImage = QImage(mergedArrays.data,self.width,self.height,mergedArrays.strides[0],QImage.Format_RGB888)

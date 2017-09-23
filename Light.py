@@ -8,6 +8,7 @@ class Light:
 		self.pos = pos
 		self.intensity = intensity
 		self.color = color
+		self.area = 1
 
 
 class PointLight(Light):
@@ -18,11 +19,13 @@ class PointLight(Light):
 
 
 class DiskLight(Light):
-	def __init__(self,pos,radius,intensity = 5000, color = Vector(1,1,1),samples = 8):
+	def __init__(self,pos,radius,intensity = 10, color = Vector(1,1,1),samples = 8,normal=Vector(0,-1,0)):
 		super().__init__(pos,intensity,color)
 		self.type = 'Area'
 		self.radius = radius
 		self.samples = samples
+		self.normal = normal
+		self.area = math.pi * math.pow(radius,2)
 		#self.samplePtList = self.getRandomSample()
 
 	def getRandomSample(self):

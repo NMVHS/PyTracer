@@ -37,7 +37,7 @@ def main():
 	#-------Scene--------
 	#important! This is a right handed coordinate system!
 	sphere01 = Sphere(Vector(-15,-30,-136),20,material=whiteLambert)
-	sphere02 = Sphere(Vector(10,-20,-136),30,material=mirror)
+	sphere02 = Sphere(Vector(10,-20,-136),30,material=whiteLambert)
 	plane01 = Plane(Vector(0,-50,-136),Vector(0,1,0),material=whiteLambert) #bottom wall
 	plane02 = Plane(Vector(-50,0,-136),Vector(1,0,0),material=redLambert) #left wall
 	plane03 = Plane(Vector(0,0,-186),Vector(0,0,1),material=whiteLambert) #back wall
@@ -48,7 +48,7 @@ def main():
 	light02 = PointLight(Vector(-20,40,-160))
 	light03 = PointLight(Vector(20,30,-90))
 
-	newScene = Scene({"geometry":[sphere01,sphere02,plane01,plane02,plane03,plane04,plane05],"light":[light02]})
+	newScene = Scene({"geometry":[sphere01,sphere02,plane01,plane02,plane03,plane04,plane05],"light":[light03]})
 
 	cam = Camera(Vector(0,0,0),Vector(0,0,1),60)
 
