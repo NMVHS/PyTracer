@@ -16,6 +16,7 @@ class RenderThread(QThread):
 		self.height = height
 		self.scene = scene
 		self.cam = cam
+		self.canvas = np.ndarray(shape=(self.height,self.width,3),dtype = np.float)
 
 	def getBucket(self,processCnt):
 		#input the process count, return the starting point of each bucket
@@ -38,14 +39,14 @@ class RenderThread(QThread):
 		jobsQueue = multiprocessing.Queue()
 
 		for i in range(processCnt):
-			job = RenderProcess(jobsQueue,i,self.width,self.height,startLine[i],bucketHeight,self.scene,self.cam)
+			job = RenderProcess(jobsQueue,self.width,self.height,0,startLine[i],bucketHeight,self.scene,self.cam)
 			jobs.append(job)
 
 		timerStart = datetime.now()
 		for each in jobs:
 			each.start()
 
-		bucketArrays = [jobsQueue.get() for each in jobs]
+		bucketData = [jobsQueue.get() for each in jobs]
 		#This has to be after Queue.get() or simply don't join
 		#Update: join() --- wait till all the processes finish, then move on
 		for each in jobs:
@@ -55,18 +56,25 @@ class RenderThread(QThread):
 		renderTime = timerEnd - timerStart
 		print("Total Render Time: " + str(renderTime))
 
-		bucketArrays.sort(key = self.getOrderKey)
-		bucketArrays = [r[1] for r in bucketArrays]
+		# bucketArrays.sort(key = self.getOrderKey)
+		# bucketArrays = [r[1] for r in bucketArrays]
+		for eachData in bucketData:
+			#print("----till here")
+			dataX = eachData[0]
+			dataY = eachData[1]
+			self.canvas[dataY:dataY+bucketHeight,dataX:600] += bucketData[2]
 
+		"""
 		#merge the arrays into one
-		mergedArrays = np.vstack(bucketArrays) #merged along second axis
+		#mergedArrays = np.vstack(bucketArrays) #merged along second axis
 		#np.require(mergedArrays,np.float32,"C")
 
 		#Apply 2.2 gamma correction and convert sRGB, in order to convert it to Qimage, array type has to be uint8
-		mergedArrays = (np.power(mergedArrays,1/2.2) * 255).astype(np.uint8)
+		self.canvas = (np.power(self.canvas,1/2.2) * 255).astype(np.uint8)
 
 		#convert array to QImage
-		newImage = QImage(mergedArrays.data,self.width,self.height,mergedArrays.strides[0],QImage.Format_RGB888)
+		newImage = QImage(self.canvas.data,self.width,self.height,self.canvas.strides[0],QImage.Format_RGB888)
 		newImage.save("test.png") #Image has to be save in this thread
 		self.updateImgSignal.emit(newImage)
 		# self.update(newImage)
+		"""

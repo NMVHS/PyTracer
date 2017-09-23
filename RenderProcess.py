@@ -5,13 +5,13 @@ from Geo.Ray import Ray
 from Scene import Scene
 
 class RenderProcess(multiprocessing.Process):
-	def __init__(self,outputQ,order,width,height,startLine,bucketHeight,scene,cam):
+	def __init__(self,outputQ,width,height,bucketX,bucketY,bucketHeight,scene,cam):
 		multiprocessing.Process.__init__(self)
 		self.outputQ = outputQ
-		self.order = order
-		self.width = width
+		self.width = width #image width
 		self.height = height
-		self.startLine = startLine
+		self.bucketX = bucketX #X coord of of bucket
+		self.bucketY = bucketY #Y coord of the bucket
 		self.bucketHeight = bucketHeight
 		self.scene = scene #includes geometries and lights
 		self.cam = cam
@@ -34,7 +34,7 @@ class RenderProcess(multiprocessing.Process):
 
 		timerStart = datetime.now()
 		#----shoot rays-------
-		for j in range(self.startLine,self.startLine + self.bucketHeight):
+		for j in range(self.bucketY,self.bucketY + self.bucketHeight):
 			#----Each line of pixels level--------------
 			for i in range(0,self.width):
 				#--------Each pixel level--------------------
@@ -73,7 +73,7 @@ class RenderProcess(multiprocessing.Process):
 				averageCol = self.clampColor(col / AAsample)
 				bucketArray[j%self.bucketHeight,i] = [averageCol.x,averageCol.y,averageCol.z]
 
-		self.outputQ.put((self.order,bucketArray))
+		self.outputQ.put([self.bucketX,self.bucketY,bucketArray])
 
 		timerEnd = datetime.now()
 		bucketRenderTime = timerEnd - timerStart
