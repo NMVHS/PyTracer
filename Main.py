@@ -19,7 +19,6 @@ from Camera import Camera
 from Light import PointLight, DiskLight
 from Scene import Scene
 from RenderWindow import RenderWindow
-from RenderProcess import RenderProcess
 
 
 def main():
@@ -49,7 +48,7 @@ def main():
 	light02 = PointLight(Vector(-20,40,-160))
 	light03 = PointLight(Vector(20,30,-90))
 
-	newScene = Scene({"geometry":[sphere01,sphere02,plane01,plane02,plane03,plane04,plane05],"light":[light01]})
+	newScene = Scene({"geometry":[sphere01,sphere02,plane01,plane02,plane03,plane04,plane05],"light":[light02]})
 
 	cam = Camera(Vector(0,0,0),Vector(0,0,1),60)
 

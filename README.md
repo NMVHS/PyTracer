@@ -44,5 +44,5 @@
   * Patch Render [Need improvement]
   * Real-time update
   * multiprocessing [Need improvement]
-  * Separate thread for window
+  * Separate thread for window [✓]
   * Render time calculation [✓]
