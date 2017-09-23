@@ -11,7 +11,7 @@ class Light:
 
 
 class PointLight(Light):
-	def __init__(self,pos,intensity = 8000,color = Vector(1,1,1)):
+	def __init__(self,pos,intensity = 5000,color = Vector(1,1,1)):
 		super().__init__(pos,intensity,color)
 		self.type = 'Point'
 		self.samples = 1
@@ -37,7 +37,7 @@ class DiskLight(Light):
 		return randPointOnDisk
 
 class RectangleLight(Light):
-	def __init__(self,pos,radius,intensity = 500, color = Vector(1,1,1), samples = 8):
+	def __init__(self,pos,radius,intensity = 5000, color = Vector(1,1,1), samples = 8):
 		super().__init__(pos,intensity,color)
 		self.type = 'Area'
 		self.radius = radius

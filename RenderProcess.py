@@ -16,6 +16,8 @@ class RenderProcess(multiprocessing.Process):
 		self.scene = scene #includes geometries and lights
 		self.cam = cam
 		self.bias = 0.0001
+		self.indirectSamples = 8
+		self.indirectDepthLimit = 1
 		#QImage pickling is not supported at the moment. PIL doesn't support 32 bit RGB.
 
 	def run(self):
@@ -23,7 +25,7 @@ class RenderProcess(multiprocessing.Process):
 		bucketArray = numpy.ndarray(shape=(self.bucketHeight,self.width,3),dtype = numpy.uint8)
 
 		#shoot multiple rays each pixel for anti-aliasing
-		AAsample = 4
+		AAsample = 1
 		#--deconstruct AAsample---------
 		AAxSubstep = int(math.floor(math.sqrt(AAsample)))
 		AAxSubstepLen = 1.0 / AAxSubstep
@@ -77,14 +79,45 @@ class RenderProcess(multiprocessing.Process):
 		bucketRenderTime = timerEnd - timerStart
 		print("Bucket Finished - " + multiprocessing.current_process().name + " Render time: " + str(bucketRenderTime))
 
-	def getColor(self,hitResult):
+	def getColor(self,hitResult,currDepth=0):
+		resursiveCnt = currDepth
 
 		hitPointColor = Vector(0,0,0)
 		hitPointColor = hitPointColor + self.getHitPointColor(hitResult)
-
 		#Recurvsive path tracing--------------------
-		#Generation random derections
 
+		if resursiveCnt < self.indirectDepthLimit:
+			resursiveCnt += 1
+
+			camRayDir = hitResult[1] - self.cam.pos #This has to be changed during recursive
+			tangentAxis = camRayDir.cross(hitResult[2]).normalized()
+			biTangentAxis = hitResult[2].cross(tangentAxis).normalized()
+
+			indirectColor = Vector(0,0,0)
+			currentObj = self.scene.getObjectById(hitResult[3])
+
+			for i in range(self.indirectSamples):
+				tangentRotAmount = (random.random()-0.5)*math.pi
+				biTrangentRotAmount = (random.random()-0.5)*math.pi
+				indirectRayDir = hitResult[2].rot("A",tangentRotAmount,tangentAxis).rot("A",biTrangentRotAmount,biTangentAxis)
+				biasedOrigin = hitResult[1] + indirectRayDir * self.bias
+				indirectRay = Ray(biasedOrigin,indirectRayDir)
+
+				indirectHitResult = []
+				indirectHitBool = self.scene.getClosestIntersection(indirectRay,indirectHitResult)
+				if indirectHitBool:
+					indirectHitPColor = self.getColor(indirectHitResult,resursiveCnt)
+					lambert = hitResult[2].dot(indirectRayDir)
+					indirectPointDist = (indirectHitResult[1] - hitResult[1]).length()
+					indirectLitColor = indirectHitPColor * lambert  #/ (2*math.pi*math.pow(indirectPointDist,2))
+					indirectColor = indirectColor + indirectLitColor
+
+			indirectColor = indirectColor / self.indirectSamples * 2 * math.pi
+			matColor = currentObj.material.diffuseColor
+			hitPointColor = hitPointColor + indirectColor.colorMult(matColor)
+
+
+		#Generation random derections
 
 		return hitPointColor
 

@@ -25,7 +25,7 @@ from RenderProcess import RenderProcess
 def main():
 	#-------canvas size-----
 	width = 600
-	height = 600
+	height = width
 
 	renderView = RenderWindow(width,height)
 
