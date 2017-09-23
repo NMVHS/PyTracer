@@ -28,9 +28,6 @@ class RenderThread(QThread):
 
 		return startLine, bucketHeight
 
-	def getOrderKey(self,elem):
-		return elem[0]
-
 	def run(self):
 		processCnt = multiprocessing.cpu_count()
 		print("Available Processors: " + str(processCnt))
@@ -38,7 +35,6 @@ class RenderThread(QThread):
 		startLine,bucketHeight = self.getBucket(processCnt)
 		jobs = []
 		jobsQueue = multiprocessing.Queue()
-		bucketData = []
 
 		for i in range(processCnt):
 			job = RenderProcess(jobsQueue,self.width,self.height,0,startLine[i],bucketHeight,self.scene,self.cam)
@@ -50,37 +46,34 @@ class RenderThread(QThread):
 
 		processGetCnt = 0
 		while True:
-			bucketDataSet = jobsQueue.get()
+			bucketDataSet = jobsQueue.get() #block until an item is available
+
 			if bucketDataSet == "Done":
 				processGetCnt = processGetCnt + 1
 			else:
-				bucketData.append(bucketDataSet)
+				#stamp bucket array onto the canvas array
+				dataX = bucketDataSet[0]
+				dataY = bucketDataSet[1]
+				self.canvas[dataY:dataY+bucketHeight,dataX:600] *= (bucketDataSet[3] - 1)
+				self.canvas[dataY:dataY+bucketHeight,dataX:600] += bucketDataSet[2]
+				self.canvas[dataY:dataY+bucketHeight,dataX:600] /= bucketDataSet[3]
+
+				#Clamp color to [0,1] and apply 2.2 gamma correction and convert sRGB,
+				#in order to convert it to Qimage, array type has to be uint8
+				bufferCanvas = (np.power(np.clip(self.canvas,0,1),1/2.2) * 255).astype(np.uint8)
+				#convert array to QImage
+				bufferImage = QImage(bufferCanvas.data,self.width,self.height,bufferCanvas.strides[0],QImage.Format_RGB888)
+				self.updateImgSignal.emit(bufferImage)
 
 			if processGetCnt>= processCnt:
+				bufferImage.save("test.png") #Image has to be save in this thread
 				break
 
 		#This has to be after Queue.get() or simply don't join
 		#Update: join() --- wait till all the processes finish, then move on
-		for each in jobs:
-			each.join()
+		# for each in jobs:
+		# 	each.join()
 
 		timerEnd = datetime.now()
 		renderTime = timerEnd - timerStart
 		print("Total Render Time: " + str(renderTime))
-
-		#stamp bucket array onto the canvas array
-		for eachData in bucketData:
-			dataX = eachData[0]
-			dataY = eachData[1]
-			self.canvas[dataY:dataY+bucketHeight,dataX:600] *= (eachData[3] - 1)
-			self.canvas[dataY:dataY+bucketHeight,dataX:600] += eachData[2]
-			self.canvas[dataY:dataY+bucketHeight,dataX:600] /= eachData[3]
-
-		#Clamp color to [0,1] and apply 2.2 gamma correction and convert sRGB,
-		#in order to convert it to Qimage, array type has to be uint8
-		self.canvas = (np.power(np.clip(self.canvas,0,1),1/2.2) * 255).astype(np.uint8)
-
-		#convert array to QImage
-		newImage = QImage(self.canvas.data,self.width,self.height,self.canvas.strides[0],QImage.Format_RGB888)
-		#newImage.save("test.png") #Image has to be save in this thread
-		self.updateImgSignal.emit(newImage)
