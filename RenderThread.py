@@ -17,6 +17,7 @@ class RenderThread(QThread):
 		self.scene = scene
 		self.cam = cam
 		self.canvas = np.ndarray(shape=(self.height,self.width,3),dtype = np.float)
+		self.canvas.fill(0) # Very important, need to set default color
 
 	def getBucket(self,processCnt):
 		#input the process count, return the starting point of each bucket
@@ -37,6 +38,7 @@ class RenderThread(QThread):
 		startLine,bucketHeight = self.getBucket(processCnt)
 		jobs = []
 		jobsQueue = multiprocessing.Queue()
+		bucketData = []
 
 		for i in range(processCnt):
 			job = RenderProcess(jobsQueue,self.width,self.height,0,startLine[i],bucketHeight,self.scene,self.cam)
@@ -46,7 +48,17 @@ class RenderThread(QThread):
 		for each in jobs:
 			each.start()
 
-		bucketData = [jobsQueue.get() for each in jobs]
+		processGetCnt = 0
+		while True:
+			bucketDataSet = jobsQueue.get()
+			if bucketDataSet == "Done":
+				processGetCnt = processGetCnt + 1
+			else:
+				bucketData.append(bucketDataSet)
+
+			if processGetCnt>= processCnt:
+				break
+
 		#This has to be after Queue.get() or simply don't join
 		#Update: join() --- wait till all the processes finish, then move on
 		for each in jobs:
@@ -58,15 +70,17 @@ class RenderThread(QThread):
 
 		#stamp bucket array onto the canvas array
 		for eachData in bucketData:
-			#print("----till here")
 			dataX = eachData[0]
 			dataY = eachData[1]
+			self.canvas[dataY:dataY+bucketHeight,dataX:600] *= (eachData[3] - 1)
 			self.canvas[dataY:dataY+bucketHeight,dataX:600] += eachData[2]
+			self.canvas[dataY:dataY+bucketHeight,dataX:600] /= eachData[3]
 
-		#Apply 2.2 gamma correction and convert sRGB, in order to convert it to Qimage, array type has to be uint8
-		self.canvas = (np.power(self.canvas,1/2.2) * 255).astype(np.uint8)
+		#Clamp color to [0,1] and apply 2.2 gamma correction and convert sRGB,
+		#in order to convert it to Qimage, array type has to be uint8
+		self.canvas = (np.power(np.clip(self.canvas,0,1),1/2.2) * 255).astype(np.uint8)
 
 		#convert array to QImage
 		newImage = QImage(self.canvas.data,self.width,self.height,self.canvas.strides[0],QImage.Format_RGB888)
-		newImage.save("test.png") #Image has to be save in this thread
+		#newImage.save("test.png") #Image has to be save in this thread
 		self.updateImgSignal.emit(newImage)

@@ -23,6 +23,7 @@ class RenderProcess(multiprocessing.Process):
 	def run(self):
 		#bucket rendered color data is stored in an array
 		bucketArray = numpy.ndarray(shape=(self.bucketHeight,self.width,3),dtype = numpy.float)
+		bucketArray.fill(0) #Very import need to set default color
 
 		#shoot multiple rays each pixel for anti-aliasing
 		AAsample = 4
@@ -34,8 +35,10 @@ class RenderProcess(multiprocessing.Process):
 
 		timerStart = datetime.now()
 		#----shoot rays-------
+		AAsampleCnt = 0
 		for AAy in range(0,AAySubstep):
 			for AAx in range(0,AAxSubstep):
+				#----Each bucket level--------------
 				for j in range(self.bucketY,self.bucketY + self.bucketHeight):
 					#----Each line of pixels level--------------
 					for i in range(0,self.width):
@@ -72,9 +75,10 @@ class RenderProcess(multiprocessing.Process):
 
 						bucketArray[j%self.bucketHeight,i] = [col.x,col.y,col.z]
 
-		bucketArray /= AAsample
-		numpy.clip(bucketArray,0,1)
-		self.outputQ.put([self.bucketX,self.bucketY,bucketArray])
+				AAsampleCnt += 1
+				self.outputQ.put([self.bucketX,self.bucketY,bucketArray,AAsampleCnt])
+
+		self.outputQ.put("Done")
 
 		timerEnd = datetime.now()
 		bucketRenderTime = timerEnd - timerStart
