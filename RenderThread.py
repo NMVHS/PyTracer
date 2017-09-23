@@ -62,9 +62,9 @@ class RenderThread(QThread):
 			#print("----till here")
 			dataX = eachData[0]
 			dataY = eachData[1]
-			self.canvas[dataY:dataY+bucketHeight,dataX:600] += bucketData[2]
+			self.canvas[dataY:dataY+bucketHeight,dataX:600] += eachData[2]
 
-		"""
+
 		#merge the arrays into one
 		#mergedArrays = np.vstack(bucketArrays) #merged along second axis
 		#np.require(mergedArrays,np.float32,"C")
@@ -77,4 +77,3 @@ class RenderThread(QThread):
 		newImage.save("test.png") #Image has to be save in this thread
 		self.updateImgSignal.emit(newImage)
 		# self.update(newImage)
-		"""
