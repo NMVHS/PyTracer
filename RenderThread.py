@@ -56,18 +56,12 @@ class RenderThread(QThread):
 		renderTime = timerEnd - timerStart
 		print("Total Render Time: " + str(renderTime))
 
-		# bucketArrays.sort(key = self.getOrderKey)
-		# bucketArrays = [r[1] for r in bucketArrays]
+		#stamp bucket array onto the canvas array
 		for eachData in bucketData:
 			#print("----till here")
 			dataX = eachData[0]
 			dataY = eachData[1]
 			self.canvas[dataY:dataY+bucketHeight,dataX:600] += eachData[2]
-
-
-		#merge the arrays into one
-		#mergedArrays = np.vstack(bucketArrays) #merged along second axis
-		#np.require(mergedArrays,np.float32,"C")
 
 		#Apply 2.2 gamma correction and convert sRGB, in order to convert it to Qimage, array type has to be uint8
 		self.canvas = (np.power(self.canvas,1/2.2) * 255).astype(np.uint8)
@@ -76,4 +70,3 @@ class RenderThread(QThread):
 		newImage = QImage(self.canvas.data,self.width,self.height,self.canvas.strides[0],QImage.Format_RGB888)
 		newImage.save("test.png") #Image has to be save in this thread
 		self.updateImgSignal.emit(newImage)
-		# self.update(newImage)

@@ -25,7 +25,7 @@ class RenderProcess(multiprocessing.Process):
 		bucketArray = numpy.ndarray(shape=(self.bucketHeight,self.width,3),dtype = numpy.float)
 
 		#shoot multiple rays each pixel for anti-aliasing
-		AAsample = 1
+		AAsample = 4
 		#--deconstruct AAsample---------
 		AAxSubstep = int(math.floor(math.sqrt(AAsample)))
 		AAxSubstepLen = 1.0 / AAxSubstep
@@ -34,14 +34,14 @@ class RenderProcess(multiprocessing.Process):
 
 		timerStart = datetime.now()
 		#----shoot rays-------
-		for j in range(self.bucketY,self.bucketY + self.bucketHeight):
-			#----Each line of pixels level--------------
-			for i in range(0,self.width):
-				#--------Each pixel level--------------------
-				col = Vector(0,0,0)
+		for AAy in range(0,AAySubstep):
+			for AAx in range(0,AAxSubstep):
+				for j in range(self.bucketY,self.bucketY + self.bucketHeight):
+					#----Each line of pixels level--------------
+					for i in range(0,self.width):
+						#--------Each pixel level--------------------
+						col = Vector(0,0,0)
 
-				for AAy in range(0,AAySubstep):
-					for AAx in range(0,AAxSubstep):
 						rayDir = Vector(i + AAx * AAxSubstepLen + AAxSubstepLen/2 - self.width/2,
 										-j - AAy * AAySubstepLen - AAySubstepLen/2 + self.height/2,
 										-0.5*self.width/math.tan(math.radians(self.cam.angle/2))) #Warning!!!!! Convert to radian!!!!!!!
@@ -70,9 +70,10 @@ class RenderProcess(multiprocessing.Process):
 								#diffuse material
 								col = col + self.getColor(hitResult)
 
-				averageCol = self.clampColor(col / AAsample)
-				bucketArray[j%self.bucketHeight,i] = [averageCol.x,averageCol.y,averageCol.z]
+						bucketArray[j%self.bucketHeight,i] = [col.x,col.y,col.z]
 
+		bucketArray /= AAsample
+		numpy.clip(bucketArray,0,1)
 		self.outputQ.put([self.bucketX,self.bucketY,bucketArray])
 
 		timerEnd = datetime.now()
@@ -155,12 +156,3 @@ class RenderProcess(multiprocessing.Process):
 		matColor = self.scene.getObjectById(hitResult[3]).material.diffuseColor
 
 		return Vector(matColor.x * litColorAvg.x, matColor.y * litColorAvg.y,matColor.z * litColorAvg.z)
-
-
-
-	def clampColor(self,color):
-		#clamp the color below (0,0,0) and above(1,1,1), only for saving 8 bit images
-		r = max(min(color.x,1),0)
-		g = max(min(color.y,1),0)
-		b = max(min(color.z,1),0)
-		return Vector(r,g,b)
