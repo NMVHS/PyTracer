@@ -27,7 +27,6 @@ class RenderWindow:
 	def setPixel(self,x,y,color):
 		self.renderImage.setPixel(x,y,QColor(color.x,color.y,color.z).rgba())
 
-
 	def startRender(self,scene,cam):
 		#start render in a new thread
 		self.renderTask = RenderThread(self.width,self.height,scene,cam)

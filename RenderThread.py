@@ -66,7 +66,7 @@ class RenderThread(QThread):
 				self.updateImgSignal.emit(bufferImage)
 
 			if processGetCnt>= processCnt:
-				bufferImage.save("test.png") #Image has to be save in this thread
+				#bufferImage.save("test.png") #Image has to be save in this thread
 				break
 
 		#This has to be after Queue.get() or simply don't join
