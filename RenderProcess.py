@@ -1,18 +1,20 @@
-import multiprocessing, math, random, numpy
+import multiprocessing, math, random, numpy, sys
 from datetime import datetime
+import time
 from Geo.Vector import Vector
 from Geo.Ray import Ray
 from Scene import Scene
 
 class RenderProcess(multiprocessing.Process):
-	def __init__(self,outputQ,width,height,bucketX,bucketY,bucketHeight,scene,cam):
+	def __init__(self,outputQ,width,height,bucketPosData,bucketCnt,bucketCntLock,bucketSize,scene,cam):
 		multiprocessing.Process.__init__(self)
 		self.outputQ = outputQ
 		self.width = width #image width
 		self.height = height
-		self.bucketX = bucketX #X coord of of bucket
-		self.bucketY = bucketY #Y coord of the bucket
-		self.bucketHeight = bucketHeight
+		self.bucketPosData = bucketPosData #manager.list of position data of each bucket
+		self.bucketCnt = bucketCnt #shared counter among all processes
+		self.bucketCntLock = bucketCntLock #lock for safely accessing shared variable
+		self.bucketSize = bucketSize
 		self.scene = scene #includes geometries and lights
 		self.cam = cam
 		self.bias = 0.0001
@@ -22,7 +24,7 @@ class RenderProcess(multiprocessing.Process):
 
 	def run(self):
 		#bucket rendered color data is stored in an array
-		bucketArray = numpy.ndarray(shape=(self.bucketHeight,self.width,3),dtype = numpy.float)
+		bucketArray = numpy.ndarray(shape=(self.bucketSize,self.bucketSize,3),dtype = numpy.float)
 		bucketArray.fill(0) #Very import need to set default color
 
 		#shoot multiple rays each pixel for anti-aliasing
@@ -31,58 +33,79 @@ class RenderProcess(multiprocessing.Process):
 		AAxSubstep = int(math.floor(math.sqrt(AAsample)))
 		AAxSubstepLen = 1.0 / AAxSubstep
 		AAySubstep = int(AAsample / AAxSubstep)
-		AAySubstepLen = 1.0 /AAySubstep
+		AAySubstepLen = 1.0 / AAySubstep
 
-		timerStart = datetime.now()
-		#----shoot rays-------
-		AAsampleCnt = 0
+		AAsampleGrid = []
 		for AAy in range(0,AAySubstep):
 			for AAx in range(0,AAxSubstep):
-				#----Each bucket level--------------
-				for j in range(self.bucketY,self.bucketY + self.bucketHeight):
-					#----Each line of pixels level--------------
-					for i in range(0,self.width):
-						#--------Each pixel level--------------------
-						col = Vector(0,0,0)
+				AAsingleOffset = [AAx * AAxSubstepLen + AAxSubstepLen/2,AAy * AAySubstepLen + AAySubstepLen/2]
+				AAsampleGrid.append(AAsingleOffset)
 
-						rayDir = Vector(i + AAx * AAxSubstepLen + AAxSubstepLen/2 - self.width/2,
-										-j - AAy * AAySubstepLen - AAySubstepLen/2 + self.height/2,
-										-0.5*self.width/math.tan(math.radians(self.cam.angle/2))) #Warning!!!!! Convert to radian!!!!!!!
-						camRay = Ray(self.cam.pos,rayDir)
+		timerStart = datetime.now()
 
-						#----check intersections with spheres----
-						#hitResult is a list storing calculated data [hit_t, hit_pos,hit_normal,objectId]
-						hitResult = []
-						hitBool = self.scene.getClosestIntersection(camRay,hitResult)
+		#-------Process keeps getting new bucket-------------------------
+		while True:
+			with self.bucketCntLock:
+				#access shared variable with lock, get the next bucket id
+				#print(self.bucketCnt.value,multiprocessing.current_process().name)
+				if self.bucketCnt.value <= len(self.bucketPosData) * AAsample -1:
+					thisBucketId = self.bucketCnt.value % len(self.bucketPosData)
+					thisAAoffset = math.floor(self.bucketCnt.value / len(self.bucketPosData))
+					self.bucketCnt.value += 1
+				else:
+					break
 
-						if hitBool:
-							currObj = self.scene.getObjectById(hitResult[3])
-							if currObj.material.reflectionWeight == 1:
-								#If this object's material is perfect mirror
-								incomingVec = (self.cam.pos-hitResult[1]).normalized()
-								reflectRayDir = incomingVec.rot("A",math.radians(180),hitResult[2])
-								biasedOrigin = hitResult[1] + reflectRayDir * self.bias
-								reflectionRay = Ray(biasedOrigin,reflectRayDir)
-								reflectHitResult = []
-								reflectionHitBool = self.scene.getClosestIntersection(reflectionRay,reflectHitResult)
+			bucketX = self.bucketPosData[thisBucketId][0]
+			bucketY = self.bucketPosData[thisBucketId][1]
 
-								if reflectionHitBool:
-									col = col + self.getColor(reflectHitResult).colorMult(currObj.material.reflectionColor)
+			#-------------shoot rays---------------------------------------
+			#----Each bucket level--------------
+			for j in range(bucketY,bucketY + self.bucketSize):
+				#----Each line of pixels level--------------
+				for i in range(bucketX,bucketX + self.bucketSize):
+					#--------Each pixel level--------------------
+					col = Vector(0,0,0)
 
-							else:
-								#diffuse material
-								col = col + self.getColor(hitResult)
+					rayDir = Vector(i + AAsampleGrid[thisAAoffset][0] - self.width/2,
+									-j - AAsampleGrid[thisAAoffset][1] + self.height/2,
+									-0.5*self.width/math.tan(math.radians(self.cam.angle/2))) #Warning!!!!! Convert to radian!!!!!!!
+					camRay = Ray(self.cam.pos,rayDir)
 
-						bucketArray[j%self.bucketHeight,i] = [col.x,col.y,col.z]
+					#----check intersections with spheres----
+					#hitResult is a list storing calculated data [hit_t, hit_pos,hit_normal,objectId]
+					hitResult = []
+					hitBool = self.scene.getClosestIntersection(camRay,hitResult)
 
-				AAsampleCnt += 1
-				self.outputQ.put([self.bucketX,self.bucketY,bucketArray,AAsampleCnt])
+					if hitBool:
+						currObj = self.scene.getObjectById(hitResult[3])
+						if currObj.material.reflectionWeight == 1:
+							#If this object's material is perfect mirror
+							incomingVec = (self.cam.pos-hitResult[1]).normalized()
+							reflectRayDir = incomingVec.rot("A",math.radians(180),hitResult[2])
+							biasedOrigin = hitResult[1] + reflectRayDir * self.bias
+							reflectionRay = Ray(biasedOrigin,reflectRayDir)
+							reflectHitResult = []
+							reflectionHitBool = self.scene.getClosestIntersection(reflectionRay,reflectHitResult)
+
+							if reflectionHitBool:
+								col = col + self.getColor(reflectHitResult).colorMult(currObj.material.reflectionColor)
+
+						else:
+							#diffuse material
+							col = col + self.getColor(hitResult)
+
+					bucketArray[j%self.bucketSize,i%self.bucketSize] = [col.x,col.y,col.z]
+
+			print("bucket" + str(bucketX) + ":" + str(bucketY) + " Rendered by " + multiprocessing.current_process().name)
+			self.outputQ.put([bucketX,bucketY,bucketArray,thisAAoffset+1])
+
 
 		self.outputQ.put("Done")
 
 		timerEnd = datetime.now()
-		bucketRenderTime = timerEnd - timerStart
-		print("Bucket Finished - " + multiprocessing.current_process().name + " Render time: " + str(bucketRenderTime))
+		processRenderTime = timerEnd - timerStart
+		print("Process Finished - " + multiprocessing.current_process().name + " Render time: " + str(processRenderTime))
+		sys.stdout.flush()
 
 	def getColor(self,hitResult,currDepth=0):
 		resursiveCnt = currDepth

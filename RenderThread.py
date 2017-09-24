@@ -19,25 +19,36 @@ class RenderThread(QThread):
 		self.canvas = np.ndarray(shape=(self.height,self.width,3),dtype = np.float)
 		self.canvas.fill(0) # Very important, need to set default color
 
-	def getBucket(self,processCnt):
-		#input the process count, return the starting point of each bucket
-		startLine = []
-		bucketHeight = int(self.height / processCnt)
-		for i in range(0,processCnt):
-			startLine.append(bucketHeight * i)
+	def getBucket(self,bucketSize):
+		manager = multiprocessing.Manager()
+		#input the bukcetSize, return a list of bucket Data
+		#bucketSplitData = [[bucketPosX, bucketPosY, AAcnt].......]
+		bucketHcnt = int(self.height / bucketSize)
+		bucketWcnt = int(self.width / bucketSize)
 
-		return startLine, bucketHeight
+		bucketSplitData = manager.list()
+		for y in range(0,bucketHcnt):
+			for x in range(0,bucketWcnt):
+				newBucketSplit = [x*bucketSize,y*bucketSize,0]
+				bucketSplitData.append(newBucketSplit)
+
+		return bucketSplitData
 
 	def run(self):
 		processCnt = multiprocessing.cpu_count()
 		print("Available Processors: " + str(processCnt))
 
-		startLine,bucketHeight = self.getBucket(processCnt)
+		bucketSize = 50
+		bucketPosData = self.getBucket(bucketSize) #multiprocessing manager list
+
 		jobs = []
 		jobsQueue = multiprocessing.Queue()
 
+		bucktCntLock = multiprocessing.Lock()
+		bucketCnt = multiprocessing.Value('i',0)
+
 		for i in range(processCnt):
-			job = RenderProcess(jobsQueue,self.width,self.height,0,startLine[i],bucketHeight,self.scene,self.cam)
+			job = RenderProcess(jobsQueue,self.width,self.height,bucketPosData,bucketCnt,bucktCntLock,bucketSize,self.scene,self.cam)
 			jobs.append(job)
 
 		timerStart = datetime.now()
@@ -54,17 +65,17 @@ class RenderThread(QThread):
 				#stamp bucket array onto the canvas array
 				dataX = bucketDataSet[0]
 				dataY = bucketDataSet[1]
-				self.canvas[dataY:dataY+bucketHeight,dataX:600] *= (bucketDataSet[3] - 1)
-				self.canvas[dataY:dataY+bucketHeight,dataX:600] += bucketDataSet[2]
-				self.canvas[dataY:dataY+bucketHeight,dataX:600] /= bucketDataSet[3]
+				self.canvas[dataY:dataY+bucketSize,dataX:dataX+bucketSize] *= (bucketDataSet[3] - 1)
+				self.canvas[dataY:dataY+bucketSize,dataX:dataX+bucketSize] += bucketDataSet[2]
+				self.canvas[dataY:dataY+bucketSize,dataX:dataX+bucketSize] /= bucketDataSet[3]
 
 				#Clamp color to [0,1] and apply 2.2 gamma correction and convert sRGB,
 				#in order to convert it to Qimage, array type has to be uint8
-				bucketBufferArray = self.canvas[dataY:dataY+bucketHeight,dataX:600]
+				bucketBufferArray = self.canvas[dataY:dataY+bucketSize,dataX:dataX+bucketSize]
 				bucketBufferArray = (np.power(np.clip(bucketBufferArray,0,1),1/2.2) * 255).astype(np.uint8)
 
 				#convert array to QImage
-				bucketBufferImage = QImage(bucketBufferArray.data,self.width,bucketHeight,bucketBufferArray.strides[0],QImage.Format_RGB888)
+				bucketBufferImage = QImage(bucketBufferArray.data,bucketSize,bucketSize,bucketBufferArray.strides[0],QImage.Format_RGB888)
 				self.updateImgSignal.emit([dataX,dataY,bucketBufferImage])
 
 			if processGetCnt>= processCnt:

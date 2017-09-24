@@ -14,7 +14,6 @@ class RenderWindow:
 		self.width = width
 		self.height = height
 
-
 		#-----initialize a QImage, so we can maniputalte the pixels
 		self.bgImage = QImage(width,height,4) #QImage.Format_RGB32
 		self.bgImage.fill(QColor(0,0,0)) # important, give canvas a default color
@@ -40,7 +39,7 @@ class RenderWindow:
 		self.painter.drawImage(bucketDataList[0],bucketDataList[1],bucketDataList[2])
 		self.graphicItem.setPixmap(self.pixmap)
 
-		print("Bucket "+ str(bucketDataList[0]) +":"+ str(bucketDataList[1])+" Updated")
+		#print("Bucket "+ str(bucketDataList[0]) +":"+ str(bucketDataList[1])+" Updated")
 
 	def saveImage(self):
 		self.pixmap.save("test.png")
