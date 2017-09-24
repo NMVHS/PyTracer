@@ -30,7 +30,7 @@
     * Camera Ray [✓]
     * Shadow Ray / Direct Lighting [✓]
     * Render Equation integration
-    * Recursive tracing
+    * Recursive tracing [only first pass]
 
   * Optimization:
     * multiprocessing [✓]
@@ -41,8 +41,8 @@
 
 * GUI Features:
   * Render Window [✓]
-  * Patch Render [Need improvement]
-  * Real-time update
-  * multiprocessing [Need improvement]
+  * Bucket Render [Need improvement]
+  * Real-time update [✓]
+  * multiprocessing [✓]
   * Separate thread for window [✓]
   * Render time calculation [✓]
