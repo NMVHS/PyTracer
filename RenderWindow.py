@@ -1,6 +1,6 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QGraphicsScene, QGraphicsView, QGraphicsPixmapItem
-from PyQt5.QtGui import QImage, QPixmap, QColor
+from PyQt5.QtGui import QPainter, QImage, QPixmap, QColor
 from RenderThread import RenderThread
 
 class RenderWindow:
@@ -14,29 +14,34 @@ class RenderWindow:
 		self.width = width
 		self.height = height
 
-		#-----initialize a QImage, so we can maniputalte the pixels
-		self.renderImage = QImage(width,height,4) #QImage.Format_RGB32
-		self.graphic = QGraphicsScene(0,0,width,height,self.window)
 
-		self.pixmap = QPixmap().fromImage(self.renderImage)
+		#-----initialize a QImage, so we can maniputalte the pixels
+		self.bgImage = QImage(width,height,4) #QImage.Format_RGB32
+		self.bgImage.fill(QColor(0,0,0)) # important, give canvas a default color
+
+		self.graphic = QGraphicsScene(0,0,width,height,self.window)
+		self.pixmap = QPixmap().fromImage(self.bgImage)
 		self.graphicItem = self.graphic.addPixmap(self.pixmap)
+		self.painter = QPainter(self.pixmap)
 
 		self.graphicView = QGraphicsView(self.graphic,self.window)
 		self.window.show()
 
-	def setPixel(self,x,y,color):
-		self.renderImage.setPixel(x,y,QColor(color.x,color.y,color.z).rgba())
-
 	def startRender(self,scene,cam):
 		#start render in a new thread
 		self.renderTask = RenderThread(self.width,self.height,scene,cam)
-		#self.renderTask.finished.connect(self.update)
+		self.renderTask.finished.connect(self.saveImage)
 		self.renderTask.updateImgSignal.connect(self.update)
 		self.renderTask.start()
 
-	def update(self,image):
-		#update the render view, note the render is in another thread
-		self.pixmap = QPixmap().fromImage(image)
+	def update(self,bucketDataList):
+		#update the render view, note the render is in another thread]
+		#use QPainter to stamp the image to canvas
+		self.painter.drawImage(bucketDataList[0],bucketDataList[1],bucketDataList[2])
 		self.graphicItem.setPixmap(self.pixmap)
 
-		print("Render Window Updated")
+		print("Bucket "+ str(bucketDataList[0]) +":"+ str(bucketDataList[1])+" Updated")
+
+	def saveImage(self):
+		self.pixmap.save("test.png")
+		print("Image Saved")

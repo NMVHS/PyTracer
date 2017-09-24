@@ -8,7 +8,7 @@ from RenderProcess import RenderProcess
 class RenderThread(QThread):
 	#This is a separate thread from UI, this thread will spawn tasks to multi processing
 	#This thread itself will be rendering as well
-	updateImgSignal =pyqtSignal(QImage)
+	updateImgSignal =pyqtSignal(list)
 
 	def __init__(self,width,height,scene,cam):
 		QThread.__init__(self)
@@ -60,13 +60,14 @@ class RenderThread(QThread):
 
 				#Clamp color to [0,1] and apply 2.2 gamma correction and convert sRGB,
 				#in order to convert it to Qimage, array type has to be uint8
-				bufferCanvas = (np.power(np.clip(self.canvas,0,1),1/2.2) * 255).astype(np.uint8)
+				bucketBufferArray = self.canvas[dataY:dataY+bucketHeight,dataX:600]
+				bucketBufferArray = (np.power(np.clip(bucketBufferArray,0,1),1/2.2) * 255).astype(np.uint8)
+
 				#convert array to QImage
-				bufferImage = QImage(bufferCanvas.data,self.width,self.height,bufferCanvas.strides[0],QImage.Format_RGB888)
-				self.updateImgSignal.emit(bufferImage)
+				bucketBufferImage = QImage(bucketBufferArray.data,self.width,bucketHeight,bucketBufferArray.strides[0],QImage.Format_RGB888)
+				self.updateImgSignal.emit([dataX,dataY,bucketBufferImage])
 
 			if processGetCnt>= processCnt:
-				#bufferImage.save("test.png") #Image has to be save in this thread
 				break
 
 		#This has to be after Queue.get() or simply don't join

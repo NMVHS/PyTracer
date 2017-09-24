@@ -48,12 +48,11 @@ def main():
 	light02 = PointLight(Vector(-20,40,-160))
 	light03 = PointLight(Vector(20,30,-90))
 
-	newScene = Scene({"geometry":[sphere01,sphere02,plane01,plane02,plane03,plane04,plane05],"light":[light01]})
+	newScene = Scene({"geometry":[sphere01,sphere02,plane01,plane02,plane03,plane04,plane05],"light":[light03]})
 
 	cam = Camera(Vector(0,0,0),Vector(0,0,1),60)
 
 	renderView.startRender(newScene,cam)
-
 
 	sys.exit(renderView.app.exec_())
 

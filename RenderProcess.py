@@ -17,7 +17,7 @@ class RenderProcess(multiprocessing.Process):
 		self.cam = cam
 		self.bias = 0.0001
 		self.indirectSamples = 8
-		self.indirectDepthLimit = 1
+		self.indirectDepthLimit = 0
 		#QImage pickling is not supported at the moment. PIL doesn't support 32 bit RGB.
 
 	def run(self):
