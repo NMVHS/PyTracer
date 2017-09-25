@@ -9,8 +9,8 @@
     * Sphere intersection [✓]
     * Plane intersection [✓]
     * Cube Intersection
-    * Triangle intersection
-    * Quad intersection
+    * Triangle intersection [✓]
+    * Quad intersection [✓]
 
   * Camera:
     * Camera exposure
@@ -46,3 +46,4 @@
   * multiprocessing [✓]
   * Separate thread for window [✓]
   * Render time calculation [✓]
+  * Interactive Render

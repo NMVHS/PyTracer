@@ -6,6 +6,10 @@ class Geometry:
         #Object ID is an integer, and is unique
         self.objectId = objectId
         self.material = material
+        self.type = "Geometry"
 
     def getObjectId(self):
         return self.objectId
+
+    def getType(self):
+        return self.type

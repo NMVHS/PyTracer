@@ -9,9 +9,6 @@ class Sphere(Geometry):
 		self.radius = float(radius) #radius is a scalar
 		self.epsilon = 0.0001
 
-	def type(self):
-		return "Sphere"
-
 	def getIntersection(self,ray,closestHit,result):
 		#result is a list storing calculated data [hit_t, hit_pos,hit_normal]
 		#the input result might already contain a hit_t
@@ -43,5 +40,6 @@ class Sphere(Geometry):
 			hitPos = ray.origin + ray.dir*t
 			hitNormal = (hitPos - self.pos).normalized()
 
+			result.clear()
 			result.extend([t,hitPos,hitNormal,self.objectId])
 			return True

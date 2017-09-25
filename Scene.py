@@ -39,7 +39,6 @@ class Scene:
 
 		closestHitResult = []
 
-
 		for obj in self.geo:
 			if obj.getIntersection(ray,closestHit,result):
 				hitBool = True

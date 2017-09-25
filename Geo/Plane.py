@@ -4,25 +4,13 @@ from Geo.Material import Material
 from Geo.Vector import Vector
 
 class Plane(Geometry):
-	def __init__(self,pos,normal,w=None,h=None,material=Material()):
+	def __init__(self,pos,normal,material=Material()):
+		#This is an infinite plane
 		super().__init__(material)
-		self.type = "InfinitePlane"
-		if w != None and h != None:
-			#FinitePlane
-			self.Type = "Plane"
-			self.width = w
-			self.height = h
-			self.p0 = pos + Vector(w/2,0,h/2)
-			self.p1 = pos + Vector(-w/2,0,h/2)
-			self.p2 = pos + Vector(-w/2,0,-h/2)
-			self.p3 = pos + Vector(w/2,0,-h/2)
-
+		self.type = "Plane"
 		self.pos = pos
 		self.normal = normal
 		self.epsilon = 0.0001
-
-	def type(self):
-		return self.type
 
 	def getIntersection(self,ray,closestHit,result):
 		#t = (anyplanePoint - ray.origin).dot(plane.normal) / (ray.dir.dot(plane.normal))
@@ -37,6 +25,7 @@ class Plane(Geometry):
 		hitPos = ray.origin + ray.dir*t
 		hitNormal = self.normal
 
+		result.clear()
 		result.extend([t,hitPos,hitNormal,self.objectId])
 
 		return True
