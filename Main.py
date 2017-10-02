@@ -35,6 +35,7 @@ def main():
 	greenLambert = Material(diffuseColor=Vector(0,0.9,0))
 	whiteLambert = Material(diffuseColor=Vector(0.9,0.9,0.9))
 	mirror = Material(reflectionColor=Vector(1,1,1),reflectionWeight=1)
+	emissive = Material(emissionAmount=500)
 
 	#-------Scene--------
 	#important! This is a right handed coordinate system!
@@ -50,7 +51,7 @@ def main():
 	quad02 = Quad(Vector(-50,50,-76),Vector(-50,-50,-76),Vector(-50,-50,-186),Vector(-50,50,-186),material=redLambert) #left wall
 	quad03 = Quad(Vector(-50,50,-186),Vector(-50,-50,-186),Vector(50,-50,-186),Vector(50,50,-186),material=whiteLambert)  #back wall
 	quad04 = Quad(Vector(50,50,-186),Vector(50,-50,-186),Vector(50,-50,-76),Vector(50,50,-76),material=greenLambert) #right wall
-	quad05 = Quad(Vector(-50,50,-76),Vector(-50,50,-186),Vector(50,50,-186),Vector(50,50,-76),material=whiteLambert) #top wall
+	quad05 = Quad(Vector(-50,50,-76),Vector(-50,50,-186),Vector(50,50,-186),Vector(50,50,-76),material=emissive) #top wall
 
 	light01 = DiskLight(Vector(0,40,-150),30) #light source on the top
 	light02 = PointLight(Vector(-20,40,-160))

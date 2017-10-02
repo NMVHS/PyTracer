@@ -40,7 +40,7 @@ class DiskLight(Light):
 		return randPointOnDisk
 
 class RectangleLight(Light):
-	def __init__(self,pos,radius,intensity = 5000, color = Vector(1,1,1), samples = 8):
+	def __init__(self,pos,radius,intensity = 10, color = Vector(1,1,1), samples = 8):
 		super().__init__(pos,intensity,color)
 		self.type = 'Area'
 		self.radius = radius
