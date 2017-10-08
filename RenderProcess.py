@@ -1,4 +1,4 @@
-import multiprocessing, math, random, numpy, sys
+import multiprocessing, math, random, numpy, sys, json
 from datetime import datetime
 import time
 from Geo.Vector import Vector
@@ -6,8 +6,11 @@ from Geo.Ray import Ray
 from Scene import Scene
 
 class RenderProcess(multiprocessing.Process):
+	#Render process class is the core of the tracer
+	#each RenderProcess class instances calculates render bucketss, all the magic is here
 	def __init__(self,outputQ,width,height,bucketPosData,bucketCnt,bucketCntLock,bucketSize,scene,cam):
 		multiprocessing.Process.__init__(self)
+		processSettings = self.loadSettings()
 		self.outputQ = outputQ
 		self.width = width #image width
 		self.height = height
@@ -17,10 +20,18 @@ class RenderProcess(multiprocessing.Process):
 		self.bucketSize = bucketSize
 		self.scene = scene #includes geometries and lights
 		self.cam = cam
-		self.bias = 0.0001
-		self.indirectSamples = 8
-		self.indirectDepthLimit = 0
+		self.bias = processSettings["Bias"]
+		self.indirectSamples = processSettings["IndirectSamples"]
+		self.indirectDepthLimit = processSettings["IndirectDepth"]
+		self.AAsamples = processSettings["AAsamples"]
+		self.reflectionMaxDepth = processSettings["ReflectionMaxDepth"]
 		#QImage pickling is not supported at the moment. PIL doesn't support 32 bit RGB.
+
+	def loadSettings(self):
+		with open("RenderSettings.json") as settingsData:
+			renderSettings = json.load(settingsData)
+
+		return renderSettings["RenderProcess"]
 
 	def run(self):
 		#bucket rendered color data is stored in an array
@@ -28,11 +39,10 @@ class RenderProcess(multiprocessing.Process):
 		bucketArray.fill(0) #Very import need to set default color
 
 		#shoot multiple rays each pixel for anti-aliasing
-		AAsample = 4
-		#--deconstruct AAsample---------
-		AAxSubstep = int(math.floor(math.sqrt(AAsample)))
+		#--deconstruct self.AAsamples---------
+		AAxSubstep = int(math.floor(math.sqrt(self.AAsamples)))
 		AAxSubstepLen = 1.0 / AAxSubstep
-		AAySubstep = int(AAsample / AAxSubstep)
+		AAySubstep = int(self.AAsamples / AAxSubstep)
 		AAySubstepLen = 1.0 / AAySubstep
 
 		AAsampleGrid = []
@@ -48,7 +58,7 @@ class RenderProcess(multiprocessing.Process):
 			with self.bucketCntLock:
 				#access shared variable with lock, get the next bucket id
 				#print(self.bucketCnt.value,multiprocessing.current_process().name)
-				if self.bucketCnt.value <= len(self.bucketPosData) * AAsample -1:
+				if self.bucketCnt.value <= len(self.bucketPosData) * self.AAsamples -1:
 					thisBucketId = self.bucketCnt.value % len(self.bucketPosData)
 					thisAAoffset = math.floor(self.bucketCnt.value / len(self.bucketPosData))
 					self.bucketCnt.value += 1
@@ -80,19 +90,13 @@ class RenderProcess(multiprocessing.Process):
 						currObj = self.scene.getObjectById(hitResult[3])
 						if currObj.material.reflectionWeight == 1:
 							#If this object's material is perfect mirror
-							incomingVec = (self.cam.pos-hitResult[1]).normalized()
-							reflectRayDir = incomingVec.rot("A",math.radians(180),hitResult[2])
-							biasedOrigin = hitResult[1] + reflectRayDir * self.bias
-							reflectionRay = Ray(biasedOrigin,reflectRayDir)
 							reflectHitResult = []
-							reflectionHitBool = self.scene.getClosestIntersection(reflectionRay,reflectHitResult)
-
+							reflectionHitBool = self.getMirrorReflectionHit(self.cam.pos,hitResult,reflectHitResult)
 							if reflectionHitBool:
-								col = col + self.getColor(reflectHitResult).colorMult(currObj.material.reflectionColor)
-
+								col = col + self.getColor(reflectHitResult,self.cam.pos).colorMult(currObj.material.reflectionColor)
 						else:
 							#diffuse material
-							col = col + self.getColor(hitResult)
+							col = col + self.getColor(hitResult,self.cam.pos)
 
 					bucketArray[j%self.bucketSize,i%self.bucketSize] = [col.x,col.y,col.z]
 
@@ -107,7 +111,15 @@ class RenderProcess(multiprocessing.Process):
 		print("Process Finished - " + multiprocessing.current_process().name + " Render time: " + str(processRenderTime))
 		sys.stdout.flush()
 
-	def getColor(self,hitResult,currDepth=0):
+	def getMirrorReflectionHit(self,prevHitPos,hitResult,reflectHitResult):
+		incomingVec = (prevHitPos-hitResult[1]).normalized()
+		reflectRayDir = incomingVec.rot("A",math.radians(180),hitResult[2])
+		biasedOrigin = hitResult[1] + reflectRayDir * self.bias
+		reflectionRay = Ray(biasedOrigin,reflectRayDir)
+		reflectionHitBool = self.scene.getClosestIntersection(reflectionRay,reflectHitResult)
+		return reflectionHitBool
+
+	def getColor(self,hitResult,prevHitPos,currDepth=0):
 		resursiveCnt = currDepth
 
 		hitPointColor = Vector(0,0,0)
@@ -117,8 +129,12 @@ class RenderProcess(multiprocessing.Process):
 		if resursiveCnt < self.indirectDepthLimit:
 			resursiveCnt += 1
 
-			camRayDir = hitResult[1] - self.cam.pos #This has to be changed during recursive
-			tangentAxis = camRayDir.cross(hitResult[2]).normalized()
+			if resursiveCnt == 1:
+				incomingRayDir = hitResult[1] - self.cam.pos #This has to be changed during recursive
+			else:
+				incomingRayDir = hitResult[1] - prevHitPos
+
+			tangentAxis = incomingRayDir.cross(hitResult[2]).normalized()
 			biTangentAxis = hitResult[2].cross(tangentAxis).normalized()
 
 			indirectColor = Vector(0,0,0)
@@ -133,17 +149,36 @@ class RenderProcess(multiprocessing.Process):
 
 				indirectHitResult = []
 				indirectHitBool = self.scene.getClosestIntersection(indirectRay,indirectHitResult)
+
 				if indirectHitBool:
-					indirectHitPColor = self.getColor(indirectHitResult,resursiveCnt)
-					lambert = hitResult[2].dot(indirectRayDir)
-					indirectPointDist = (indirectHitResult[1] - hitResult[1]).length()
-					indirectLitColor = indirectHitPColor * lambert  #/ (2*math.pi*math.pow(indirectPointDist,2))
-					indirectColor = indirectColor + indirectLitColor
+					mirrorReflectHit = False
+					indirectHitObj = self.scene.getObjectById(indirectHitResult[3])
+					incomingHitPos = prevHitPos
+					#Check if the indirect ray hits a mirror object
+					mirrorDepthCnt = 0
+					while indirectHitObj.material.reflectionWeight == 1 and mirrorDepthCnt < self.reflectionMaxDepth:
+						mirrorHitResult = []
+						mirrorHitBool = self.getMirrorReflectionHit(incomingHitPos,indirectHitResult,mirrorHitResult)
+						if mirrorHitBool:
+							incomingHitPos = indirectHitResult[1]
+							indirectHitResult = mirrorHitResult
+							indirectHitObj = self.scene.getObjectById(mirrorHitResult[3])
+							mirrorReflectHit = True
+							mirrorDepthCnt += 1
+						else:
+							mirrorReflectHit = False
+							break
+
+					if mirrorReflectHit:
+						indirectHitPColor = self.getColor(indirectHitResult,hitResult[1],resursiveCnt) #get the indirect color
+						lambert = hitResult[2].dot(indirectRayDir)
+						indirectPointDist = (indirectHitResult[1] - hitResult[1]).length()
+						indirectLitColor = indirectHitPColor * lambert  #/ (2*math.pi*math.pow(indirectPointDist,2))
+						indirectColor = indirectColor + indirectLitColor
 
 			indirectColor = indirectColor / self.indirectSamples * 2 * math.pi
 			matColor = currentObj.material.diffuseColor
 			hitPointColor = hitPointColor + indirectColor.colorMult(matColor)
-
 
 		#Generation random derections
 

@@ -1,0 +1,16 @@
+{
+  "RenderWindow":{
+    "ImageWidth": 600,
+    "ImageHeight": 600
+  },
+  "RenderThread":{
+    "BucketSize":50
+  },
+  "RenderProcess": {
+    "AAsamples": 1,
+    "IndirectSamples":8,
+    "IndirectDepth":1,
+    "Bias":0.0001,
+    "ReflectionMaxDepth":2
+  }
+}

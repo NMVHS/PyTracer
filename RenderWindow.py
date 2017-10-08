@@ -1,24 +1,27 @@
-import sys
+import sys, json
 from PyQt5.QtWidgets import QApplication, QWidget, QGraphicsScene, QGraphicsView, QGraphicsPixmapItem
 from PyQt5.QtGui import QPainter, QImage, QPixmap, QColor
 from RenderThread import RenderThread
 
 class RenderWindow:
-	def __init__(self,width,height):
+	def __init__(self):
+		#loadSettings from json file
+		windowSettings = self.loadSettings()
+		self.width = windowSettings["ImageWidth"]
+		self.height = windowSettings["ImageHeight"]
+
 		#-------ui initialization-------
 		self.app = QApplication(sys.argv)
 		self.window = QWidget()
-		self.window.setFixedSize(width,height)
+		self.window.setFixedSize(self.width,self.height)
 		self.window.move(50,50)
 		self.window.setWindowTitle('PyTracer')
-		self.width = width
-		self.height = height
 
 		#-----initialize a QImage, so we can maniputalte the pixels
-		self.bgImage = QImage(width,height,4) #QImage.Format_RGB32
+		self.bgImage = QImage(self.width,self.height,4) #QImage.Format_RGB32
 		self.bgImage.fill(QColor(0,0,0)) # important, give canvas a default color
 
-		self.graphic = QGraphicsScene(0,0,width,height,self.window)
+		self.graphic = QGraphicsScene(0,0,self.width,self.height,self.window)
 		self.pixmap = QPixmap().fromImage(self.bgImage)
 		self.graphicItem = self.graphic.addPixmap(self.pixmap)
 		self.painter = QPainter(self.pixmap)
@@ -26,9 +29,15 @@ class RenderWindow:
 		self.graphicView = QGraphicsView(self.graphic,self.window)
 		self.window.show()
 
+	def loadSettings(self):
+		with open("RenderSettings.json") as settingsData:
+			renderSettings = json.load(settingsData)
+
+		return renderSettings["RenderWindow"]
+
 	def startRender(self,scene,cam):
 		#start render in a new thread
-		self.renderTask = RenderThread(self.width,self.height,scene,cam)
+		self.renderTask = RenderThread(self.width,self.height,scene,cam,)
 		self.renderTask.finished.connect(self.saveImage)
 		self.renderTask.updateImgSignal.connect(self.update)
 		self.renderTask.start()

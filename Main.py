@@ -24,11 +24,7 @@ from RenderWindow import RenderWindow
 
 
 def main():
-	#-------canvas size-----
-	width = 600
-	height = width
-
-	renderView = RenderWindow(width,height)
+	renderView = RenderWindow() #All setting load from json file
 
 	redLambert = Material(diffuseColor=Vector(0.9,0,0))
 	blueLambert = Material(diffuseColor=Vector(0,0,0.9))
@@ -50,7 +46,7 @@ def main():
 	quad01 = Quad(Vector(-50,-50,-186),Vector(-50,-50,-76),Vector(50,-50,-76),Vector(50,-50,-186),material=whiteLambert) #bottom wall
 	quad02 = Quad(Vector(-50,50,-76),Vector(-50,-50,-76),Vector(-50,-50,-186),Vector(-50,50,-186),material=redLambert) #left wall
 	quad03 = Quad(Vector(-50,50,-186),Vector(-50,-50,-186),Vector(50,-50,-186),Vector(50,50,-186),material=whiteLambert)  #back wall
-	quad04 = Quad(Vector(50,50,-186),Vector(50,-50,-186),Vector(50,-50,-76),Vector(50,50,-76),material=greenLambert) #right wall
+	quad04 = Quad(Vector(50,50,-186),Vector(50,-50,-186),Vector(50,-50,-76),Vector(50,50,-76),material=mirror) #right wall
 	quad05 = Quad(Vector(-50,50,-76),Vector(-50,50,-186),Vector(50,50,-186),Vector(50,50,-76),material=emissive) #top wall
 
 	light01 = DiskLight(Vector(0,40,-150),30) #light source on the top
