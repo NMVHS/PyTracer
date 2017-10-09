@@ -88,15 +88,37 @@ class RenderProcess(multiprocessing.Process):
 
 					if hitBool:
 						currObj = self.scene.getObjectById(hitResult[3])
-						if currObj.material.reflectionWeight == 1:
-							#If this object's material is perfect mirror
-							reflectHitResult = []
-							reflectionHitBool = self.getMirrorReflectionHit(self.cam.pos,hitResult,reflectHitResult)
-							if reflectionHitBool:
-								col = col + self.getColor(reflectHitResult,self.cam.pos).colorMult(currObj.material.reflectionColor)
+						prevHitPos = self.cam.pos
+						while currObj.material.refractionWeight == 1:
+							#If this object's material is transparent
+							refractHitResult = []
+							refractionHitBool = self.getRefractionHit(prevHitPos,hitResult,refractHitResult)
+							if refractionHitBool:
+								currObj = self.scene.getObjectById(refractHitResult[3])
+								prevHitPos = hitResult[1]
+								hitResult = refractHitResult
+							else:
+								break
+
+						# mirrorDepthCnt = 0
+						# while currObj.material.reflectionWeight == 1 and mirrorDepthCnt < self.reflectionMaxDepth:
+						# 	#If this object's material is perfect mirror, and maybe the reflected ray hits mirror again
+						# 	reflectHitResult = []
+						# 	reflectionHitBool = self.getMirrorReflectionHit(prevHitPos,hitResult,reflectHitResult)
+						# 	if reflectionHitBool:
+						# 		currObj = self.scene.getObjectById(reflectHitResult[3])
+						# 		prevHitPos = hitResult[1]
+						# 		hitResult = reflectHitResult
+						# 		mirrorDepthCnt += 1
+						# 	else:
+						# 		#reflect ray doesn't hit anything
+						# 		break
+
 						else:
-							#diffuse material
-							col = col + self.getColor(hitResult,self.cam.pos)
+							#col = col + self.getColor(reflectHitResult,self.cam.pos).colorMult(currObj.material.reflectionColor)
+
+							#reflection ray finally hits a non-mirror object
+							col = col + self.getColor(hitResult,prevHitPos)
 
 					bucketArray[j%self.bucketSize,i%self.bucketSize] = [col.x,col.y,col.z]
 
@@ -110,6 +132,29 @@ class RenderProcess(multiprocessing.Process):
 		processRenderTime = timerEnd - timerStart
 		print("Process Finished - " + multiprocessing.current_process().name + " Render time: " + str(processRenderTime))
 		sys.stdout.flush()
+
+	def getRefractionHit(self,prevHitPos,hitResult,refractHitResult):
+		incomingVec = (prevHitPos - hitResult[1]).normalized() #It's actually the inverse direction of incoming ray
+		incomingCos = incomingVec.dot(hitResult[2])
+		ior = self.scene.getObjectById(hitResult[3]).material.refractionIndex
+		rotAxis = hitResult[2].cross(incomingVec).normalized()
+		if incomingCos >= 0 and incomingCos < 1:
+			#When ray is entering another medium
+			refractAngle = math.asin(math.sqrt(1-math.pow(incomingCos,2))/ior)
+			refractRayDir = (hitResult[2]*(-1)).rot("A",refractAngle,rotAxis)
+		elif incomingCos > -1 and incomingCos < 0:
+			#When ray is leaving the medium
+			refractAngle = math.asin(ior*math.sqrt(1-math.pow(incomingCos,2)))
+			refractRayDir = hitResult[2].rot("A",-refractAngle,rotAxis)
+		else:
+			#incoming ray is perpendicular to the surface
+			refractRayDir = incomingVec * (-1)
+
+		biasedOrigin = hitResult[1] + refractRayDir * self.bias
+		refractionRay = Ray(biasedOrigin,refractRayDir)
+		refractionHitBool = self.scene.getClosestIntersection(refractionRay,refractHitResult)
+		return refractionHitBool
+
 
 	def getMirrorReflectionHit(self,prevHitPos,hitResult,reflectHitResult):
 		incomingVec = (prevHitPos-hitResult[1]).normalized()
@@ -151,7 +196,6 @@ class RenderProcess(multiprocessing.Process):
 				indirectHitBool = self.scene.getClosestIntersection(indirectRay,indirectHitResult)
 
 				if indirectHitBool:
-					mirrorReflectHit = False
 					indirectHitObj = self.scene.getObjectById(indirectHitResult[3])
 					incomingHitPos = prevHitPos
 					#Check if the indirect ray hits a mirror object
@@ -163,13 +207,11 @@ class RenderProcess(multiprocessing.Process):
 							incomingHitPos = indirectHitResult[1]
 							indirectHitResult = mirrorHitResult
 							indirectHitObj = self.scene.getObjectById(mirrorHitResult[3])
-							mirrorReflectHit = True
 							mirrorDepthCnt += 1
 						else:
-							mirrorReflectHit = False
+							#Reflected ray doesn't hit anything
 							break
-
-					if mirrorReflectHit:
+					else:
 						indirectHitPColor = self.getColor(indirectHitResult,hitResult[1],resursiveCnt) #get the indirect color
 						lambert = hitResult[2].dot(indirectRayDir)
 						indirectPointDist = (indirectHitResult[1] - hitResult[1]).length()

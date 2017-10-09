@@ -30,9 +30,9 @@ class Sphere(Geometry):
 				t = min(t0,t1) #Important!!!! We need the closest t, means the smallest t!!!!!!!!!!!!!
 				if t >= closestHit: return False #check if this t is behind the closest t detected so far
 			elif t0 > 0 and t1 <= 0:
-				t = t0
+				t = t0 #ray origin is inside the sphere
 			elif t1 > 0 and t0 <= 0:
-				t = t1
+				t = t1 #ray origin is inside the sphere
 			else:
 				return False
 
