@@ -47,7 +47,11 @@ class Scene:
 				closestHitResult.extend(result)
 				result.clear()
 				if isShadowRay:
-					break
+					if self.getObjectById(closestHitResult[3]).material.refractionWeight < 1:
+						#if this object is not transparent
+						break
+					else:
+						hitBool = False
 
 		result.extend(closestHitResult)
 		return hitBool

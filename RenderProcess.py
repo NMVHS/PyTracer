@@ -25,6 +25,7 @@ class RenderProcess(multiprocessing.Process):
 		self.indirectDepthLimit = processSettings["IndirectDepth"]
 		self.AAsamples = processSettings["AAsamples"]
 		self.reflectionMaxDepth = processSettings["ReflectionMaxDepth"]
+		self.refractionMaxDepth = processSettings["RefractionMaxDepth"]
 		#QImage pickling is not supported at the moment. PIL doesn't support 32 bit RGB.
 
 	def loadSettings(self):
@@ -89,16 +90,29 @@ class RenderProcess(multiprocessing.Process):
 					if hitBool:
 						currObj = self.scene.getObjectById(hitResult[3])
 						prevHitPos = self.cam.pos
-						while currObj.material.refractionWeight == 1:
+						refractDepthCnt = 0
+						while currObj.material.refractionWeight == 1 and refractDepthCnt < self.refractionMaxDepth:
 							#If this object's material is transparent
 							refractHitResult = []
 							refractionHitBool = self.getRefractionHit(prevHitPos,hitResult,refractHitResult)
+							#Calculate fresnel
+							ior = currObj.material.refractionIndex
+							incomingCos = refractHitResult[4]
+							refractCos = refractHitResult[5]
+							fresnelParallel = math.pow((ior*incomingCos - refractCos) / (ior*incomingCos + refractCos),2)
+							fresnelPerpendicular = math.pow((refractCos - ior*incomingCos) / (ior*incomingCos + refractCos),2)
+							fresnelReflect = 0.5 * (fresnelParallel + fresnelPerpendicular)
+							fresnelRefract = 1 - fresnelReflect
+
 							if refractionHitBool:
 								currObj = self.scene.getObjectById(refractHitResult[3])
 								prevHitPos = hitResult[1]
 								hitResult = refractHitResult
+								refractDepthCnt += 1
 							else:
 								break
+
+						#Fresnel
 
 						# mirrorDepthCnt = 0
 						# while currObj.material.reflectionWeight == 1 and mirrorDepthCnt < self.reflectionMaxDepth:
@@ -142,22 +156,27 @@ class RenderProcess(multiprocessing.Process):
 			#When ray is entering another medium
 			refractAngle = math.asin(math.sqrt(1-math.pow(incomingCos,2))/ior)
 			refractRayDir = (hitResult[2]*(-1)).rot("A",refractAngle,rotAxis)
+			refractCos = math.cos(refractAngle)
 		elif incomingCos > -1 and incomingCos < 0:
 			#When ray is leaving the medium
 			refractAngleMultIor = math.sqrt(1-math.pow(incomingCos,2))*ior
 			if refractAngleMultIor  > 1:
 				#Critical angle, total internal reflection
 				refractRayDir = incomingVec.rot("A",math.radians(180),hitResult[2])
+				refractCos = 0
 			else:
 				refractAngle = math.asin(refractAngleMultIor)
 				refractRayDir = hitResult[2].rot("A",-refractAngle,rotAxis)
+				refractCos = math.cos(refractAngle)
 		else:
 			#incoming ray is perpendicular to the surface
+			refractCos = 1
 			refractRayDir = incomingVec * (-1)
 
 		biasedOrigin = hitResult[1] + refractRayDir * self.bias
 		refractionRay = Ray(biasedOrigin,refractRayDir)
 		refractionHitBool = self.scene.getClosestIntersection(refractionRay,refractHitResult)
+		refractHitResult.append(incomingCos, refractCos)
 		return refractionHitBool
 
 
