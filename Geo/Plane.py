@@ -1,4 +1,4 @@
-import math
+# import math
 from Geo.Geometry import Geometry
 from Geo.Material import Material
 from Geo.Vector import Vector

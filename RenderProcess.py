@@ -144,8 +144,13 @@ class RenderProcess(multiprocessing.Process):
 			refractRayDir = (hitResult[2]*(-1)).rot("A",refractAngle,rotAxis)
 		elif incomingCos > -1 and incomingCos < 0:
 			#When ray is leaving the medium
-			refractAngle = math.asin(ior*math.sqrt(1-math.pow(incomingCos,2)))
-			refractRayDir = hitResult[2].rot("A",-refractAngle,rotAxis)
+			refractAngleMultIor = math.sqrt(1-math.pow(incomingCos,2))*ior
+			if refractAngleMultIor  > 1:
+				#Critical angle, total internal reflection
+				refractRayDir = incomingVec.rot("A",math.radians(180),hitResult[2])
+			else:
+				refractAngle = math.asin(refractAngleMultIor)
+				refractRayDir = hitResult[2].rot("A",-refractAngle,rotAxis)
 		else:
 			#incoming ray is perpendicular to the surface
 			refractRayDir = incomingVec * (-1)

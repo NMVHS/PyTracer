@@ -37,12 +37,14 @@ def main():
 	#important! This is a right handed coordinate system!
 	sphere01 = Sphere(Vector(-15,-30,-136),20,material=whiteLambert)
 	sphere02 = Sphere(Vector(10,-20,-136),30,material=glass)
+	sphere03 = Sphere(Vector(-15,-30,-120),20,material=glass)
 	#plane01 = Plane(Vector(0,-50,-136),Vector(0,1,0),material=whiteLambert) #bottom wall
 	#plane02 = Plane(Vector(-50,0,-136),Vector(1,0,0),material=redLambert) #left wall
 	#plane03 = Plane(Vector(0,0,-186),Vector(0,0,1),material=whiteLambert) #back wall
 	#plane04 = Plane(Vector(50,0,-136),Vector(-1,0,0),material=greenLambert) #right wall
 	#plane05 = Plane(Vector(0,50,-136),Vector(0,-1,0),material=whiteLambert) #top wall
-	#tri01 = Triangle(Vector(0,40,-136),Vector(-20,20,-136),Vector(20,20,-156),material=mirror)
+	tri01 = Triangle(Vector(30,40,-136),Vector(-10,20,-136),Vector(50,20,-156),material=glass)
+	tri02 = Triangle(Vector(30,40,-146),Vector(50,20,-166),Vector(-10,20,-146),material=glass)
 	quad01 = Quad(Vector(-50,-50,-186),Vector(-50,-50,-76),Vector(50,-50,-76),Vector(50,-50,-186),material=whiteLambert) #bottom wall
 	quad02 = Quad(Vector(-50,50,-76),Vector(-50,-50,-76),Vector(-50,-50,-186),Vector(-50,50,-186),material=redLambert) #left wall
 	quad03 = Quad(Vector(-50,50,-186),Vector(-50,-50,-186),Vector(50,-50,-186),Vector(50,50,-186),material=whiteLambert)  #back wall
@@ -53,7 +55,7 @@ def main():
 	light02 = PointLight(Vector(-20,40,-160))
 	light03 = PointLight(Vector(20,30,-90))
 
-	newScene = Scene({"geometry":[sphere01,sphere02,quad01,quad02,quad03,quad04,quad05],"light":[light02]})
+	newScene = Scene({"geometry":[quad01,quad02,quad03,quad04,quad05,sphere03],"light":[light02]})
 
 	cam = Camera(Vector(0,0,0),Vector(0,0,1),60)
 
