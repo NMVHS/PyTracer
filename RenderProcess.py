@@ -208,39 +208,37 @@ class RenderProcess(multiprocessing.Process):
 			#Diffuse material
 			hitPointColor = hitPointColor + self.getHitPointColor(hitResult)
 
-		#Recurvsive path tracing--------------------
-		if recursiveCnt < self.indirectDepthLimit:
-			recursiveCnt += 1
-			incomingRayDir = hitResult[1] - prevHitPos
+			#Recurvsive path tracing, only for diffuse material--------------------
+			if recursiveCnt < self.indirectDepthLimit:
+				recursiveCnt += 1
+				incomingRayDir = hitResult[1] - prevHitPos
 
-			tangentAxis = incomingRayDir.cross(hitResult[2]).normalized()
-			biTangentAxis = hitResult[2].cross(tangentAxis).normalized()
+				tangentAxis = incomingRayDir.cross(hitResult[2]).normalized()
+				biTangentAxis = hitResult[2].cross(tangentAxis).normalized()
 
-			indirectColor = Vector(0,0,0)
-			currentObj = self.scene.getObjectById(hitResult[3])
+				indirectColor = Vector(0,0,0)
+				currentObj = self.scene.getObjectById(hitResult[3])
 
-			for i in range(self.indirectSamples):
-				tangentRotAmount = (random.random()-0.5)*math.pi
-				biTrangentRotAmount = (random.random()-0.5)*math.pi
-				indirectRayDir = hitResult[2].rot("A",tangentRotAmount,tangentAxis).rot("A",biTrangentRotAmount,biTangentAxis)
-				biasedOrigin = hitResult[1] + indirectRayDir * self.bias
-				indirectRay = Ray(biasedOrigin,indirectRayDir)
+				for i in range(self.indirectSamples):
+					tangentRotAmount = (random.random()-0.5)*math.pi
+					biTrangentRotAmount = (random.random()-0.5)*math.pi
+					indirectRayDir = hitResult[2].rot("A",tangentRotAmount,tangentAxis).rot("A",biTrangentRotAmount,biTangentAxis)
+					biasedOrigin = hitResult[1] + indirectRayDir * self.bias
+					indirectRay = Ray(biasedOrigin,indirectRayDir)
 
-				indirectHitResult = []
-				indirectHitBool = self.scene.getClosestIntersection(indirectRay,indirectHitResult)
+					indirectHitResult = []
+					indirectHitBool = self.scene.getClosestIntersection(indirectRay,indirectHitResult)
 
-				if indirectHitBool:
-					indirectHitPColor = self.getColor(indirectHitResult,hitResult[1],recursiveCnt) #get the indirect color
-					lambert = hitResult[2].dot(indirectRayDir)
-					indirectPointDist = (indirectHitResult[1] - hitResult[1]).length()
-					indirectLitColor = indirectHitPColor * lambert  #/ (2*math.pi*math.pow(indirectPointDist,2))
-					indirectColor = indirectColor + indirectLitColor
+					if indirectHitBool:
+						indirectHitPColor = self.getColor(indirectHitResult,hitResult[1],recursiveCnt) #get the indirect color
+						lambert = hitResult[2].dot(indirectRayDir)
+						indirectPointDist = (indirectHitResult[1] - hitResult[1]).length()
+						indirectLitColor = indirectHitPColor * lambert  #/ (2*math.pi*math.pow(indirectPointDist,2))
+						indirectColor = indirectColor + indirectLitColor
 
-			indirectColor = indirectColor / self.indirectSamples * 2 * math.pi
-			matColor = currentObj.material.diffuseColor
-			hitPointColor = hitPointColor + indirectColor.colorMult(matColor)
-
-		#Generation random derections
+				indirectColor = indirectColor / self.indirectSamples * 2 * math.pi
+				matColor = currentObj.material.diffuseColor
+				hitPointColor = hitPointColor + indirectColor.colorMult(matColor)
 
 		return hitPointColor
 

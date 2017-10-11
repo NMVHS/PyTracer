@@ -24,13 +24,13 @@
     * Diffuse / Lambert [✓]
     * Mirror [✓]
     * Glossy
-    * Glass
+    * Glass [✓]
 
   * Core:
     * Camera Ray [✓]
     * Shadow Ray / Direct Lighting [✓]
     * Render Equation integration
-    * Recursive tracing [only first pass]
+    * Recursive tracing [Working but slow]
 
   * Optimization:
     * multiprocessing [✓]
@@ -47,3 +47,4 @@
   * Separate thread for window [✓]
   * Render time calculation [✓]
   * Interactive Render
+  * Global render settings [✓]
