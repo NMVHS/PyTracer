@@ -104,113 +104,103 @@ class RenderProcess(multiprocessing.Process):
 		print("Process Finished - " + multiprocessing.current_process().name + " Render time: " + str(processRenderTime))
 		sys.stdout.flush()
 
-	def getRefractionColor(self,currObj,prevHitPos,hitResult):
-		refractDepthCnt = 0
+	def getRefractionColor(self,currObj,prevHitPos,hitResult,refractDepth,reflectDepth):
+		refractDepth += 1
+
 		refractionCol = Vector(0,0,0)
 		reflectionCol = Vector(0,0,0)
 		fresnelCol = Vector(0,0,0)
-		while currObj.material.refractionWeight == 1 and refractDepthCnt < self.refractionMaxDepth:
-			#If this object's material is transparent
-			incomingVec = (prevHitPos - hitResult[1]).normalized() #It's actually the inverse direction of incoming ray
-			incomingCos = incomingVec.dot(hitResult[2])
-			ior = self.scene.getObjectById(hitResult[3]).material.refractionIndex
-			rotAxis = hitResult[2].cross(incomingVec).normalized()
+		fresnelRefract = 1
+		fresnelReflect = 0
 
-			if incomingCos >= 0 and incomingCos < 1:
-				#When ray is entering another medium
-				refractAngle = math.asin(math.sqrt(1-math.pow(incomingCos,2))/ior)
-				refractRayDir = (hitResult[2]*(-1)).rot("A",refractAngle,rotAxis)
+		incomingVec = (prevHitPos - hitResult[1]).normalized() #It's actually the inverse direction of incoming ray
+		incomingCos = incomingVec.dot(hitResult[2])
+		ior = self.scene.getObjectById(hitResult[3]).material.refractionIndex
+		rotAxis = hitResult[2].cross(incomingVec).normalized()
+
+		if incomingCos >= 0 and incomingCos < 1:
+			#When ray is entering another medium
+			refractAngle = math.asin(math.sqrt(1-math.pow(incomingCos,2))/ior)
+			refractRayDir = (hitResult[2]*(-1)).rot("A",refractAngle,rotAxis)
+			refractCos = math.cos(refractAngle)
+		elif incomingCos > -1 and incomingCos < 0:
+			#When ray is leaving the medium
+			refractAngleMultIor = math.sqrt(1-math.pow(incomingCos,2))*ior
+			if refractAngleMultIor  > 1:
+				#Critical angle, total internal reflection
+				refractRayDir = incomingVec.rot("A",math.radians(180),hitResult[2])
+				refractCos = 0
+			else:
+				refractAngle = math.asin(refractAngleMultIor)
+				refractRayDir = hitResult[2].rot("A",-refractAngle,rotAxis)
 				refractCos = math.cos(refractAngle)
-			elif incomingCos > -1 and incomingCos < 0:
-				#When ray is leaving the medium
-				refractAngleMultIor = math.sqrt(1-math.pow(incomingCos,2))*ior
-				if refractAngleMultIor  > 1:
-					#Critical angle, total internal reflection
-					refractRayDir = incomingVec.rot("A",math.radians(180),hitResult[2])
-					refractCos = 0
-				else:
-					refractAngle = math.asin(refractAngleMultIor)
-					refractRayDir = hitResult[2].rot("A",-refractAngle,rotAxis)
-					refractCos = math.cos(refractAngle)
-			else:
-				#incoming ray is perpendicular to the surface
-				refractCos = 1
-				refractRayDir = incomingVec * (-1)
-
-			biasedOrigin = hitResult[1] + refractRayDir * self.bias
-			refractionRay = Ray(biasedOrigin,refractRayDir)
-			refractHitResult = []
-			refractionHitBool = self.scene.getClosestIntersection(refractionRay,refractHitResult)
-
-			if refractDepthCnt == 0:
-				#Calculate fresnel, but only the first refraction
-				fresnelParallel = math.pow((ior*incomingCos - refractCos) / (ior*incomingCos + refractCos),2)
-				fresnelPerpendicular = math.pow((refractCos - ior*incomingCos) / (ior*incomingCos + refractCos),2)
-				fresnelReflect = 0.5 * (fresnelParallel + fresnelPerpendicular)
-				fresnelRefract = 1 - fresnelReflect
-				#Get the reflection color
-				reflectionCol = reflectionCol + self.getMirrorReflectionColor(currObj,prevHitPos,hitResult)
-
-			if refractionHitBool:
-				currObj = self.scene.getObjectById(refractHitResult[3])
-				prevHitPos = hitResult[1]
-				hitResult = refractHitResult
-				refractDepthCnt += 1
-			else:
-				break
-
 		else:
-			refractionCol = refractionCol + self.getColor(hitResult,prevHitPos,self.indirectDepthLimit)
+			#incoming ray is perpendicular to the surface
+			refractCos = 1
+			refractRayDir = incomingVec * (-1)
+
+		biasedOrigin = hitResult[1] + refractRayDir * self.bias
+		refractionRay = Ray(biasedOrigin,refractRayDir)
+		refractHitResult = []
+		refractionHitBool = self.scene.getClosestIntersection(refractionRay,refractHitResult)
+
+		if refractDepth == 1:
+			#Calculate fresnel, but only the first refraction
+			fresnelS = math.pow((incomingCos - ior*refractCos) / (incomingCos + ior*refractCos),2)
+			fresnelP = math.pow((refractCos - ior*incomingCos) / (ior*incomingCos + refractCos),2)
+			fresnelReflect = 0.5 * (fresnelS + fresnelP)
+			fresnelRefract = 1 - fresnelReflect
+			#Get the reflection color
+			reflectionCol = reflectionCol + self.getMirrorReflectionColor(currObj,prevHitPos,hitResult,reflectDepth)
+
+		if refractionHitBool:
+			prevHitPos = hitResult[1]
+			hitResult = refractHitResult
+			refractionCol = refractionCol + self.getColor(hitResult,prevHitPos,indirectDepth=self.indirectDepthLimit,refractDepth=refractDepth)
 			fresnelCol = fresnelCol + refractionCol * fresnelRefract + reflectionCol*fresnelReflect
 
 		return fresnelCol
 
-	def getMirrorReflectionColor(self,currObj,prevHitPos,hitResult):
-		mirrorDepthCnt = 0
+	def getMirrorReflectionColor(self,currObj,prevHitPos,hitResult,reflectDepth):
 		reflectionCol = Vector(0,0,0)
-		reflectObj = currObj
-		while currObj.material.reflectionWeight == 1 and mirrorDepthCnt < self.reflectionMaxDepth:
-			#If this object's material is perfect mirror, and maybe the reflected ray hits mirror again
-			incomingVec = (prevHitPos-hitResult[1]).normalized()
-			reflectRayDir = incomingVec.rot("A",math.radians(180),hitResult[2])
-			biasedOrigin = hitResult[1] + reflectRayDir * self.bias
-			reflectionRay = Ray(biasedOrigin,reflectRayDir)
+		reflectDepth += 1
+		#If this object's material is perfect mirror, and maybe the reflected ray hits mirror again
+		incomingVec = (prevHitPos-hitResult[1]).normalized()
+		reflectRayDir = incomingVec.rot("A",math.radians(180),hitResult[2])
+		biasedOrigin = hitResult[1] + reflectRayDir * self.bias
+		reflectionRay = Ray(biasedOrigin,reflectRayDir)
 
-			reflectHitResult = []
-			reflectionHitBool = self.scene.getClosestIntersection(reflectionRay,reflectHitResult)
+		reflectHitResult = []
+		reflectionHitBool = self.scene.getClosestIntersection(reflectionRay,reflectHitResult)
 
-			if reflectionHitBool:
-				currObj = self.scene.getObjectById(reflectHitResult[3])
-				prevHitPos = hitResult[1]
-				hitResult = reflectHitResult
-				mirrorDepthCnt += 1
+		if reflectionHitBool:
+			prevHitPos = hitResult[1]
+			hitResult = reflectHitResult
+			if reflectDepth < self.reflectionMaxDepth:
+				reflectionCol = reflectionCol + self.getColor(hitResult,prevHitPos,indirectDepth=self.indirectDepthLimit,reflectDepth=reflectDepth).colorMult(currObj.material.reflectionColor)
 			else:
-				#reflect ray doesn't hit anything
-				break
-		else:
-			reflectionCol = reflectionCol + self.getColor(hitResult,prevHitPos,self.indirectDepthLimit).colorMult(reflectObj.material.reflectionColor)
+				reflectionCol = reflectionCol + self.getHitPointColor(hitResult).colorMult(currObj.material.reflectionColor)
 
 		return reflectionCol
 
-	def getColor(self,hitResult,prevHitPos,currDepth=0):
+	def getColor(self,hitResult,prevHitPos,indirectDepth=0,reflectDepth=0,refractDepth=0):
 		#Important, when calculating refraction/mirror reflection, pass indirectDepthLimit to getColor to avoid infinite loop
-		recursiveCnt = currDepth
 		currObj = self.scene.getObjectById(hitResult[3])
 		hitPointColor = Vector(0,0,0)
 
 		if currObj.material.refractionWeight == 1 and currObj.material.reflectionWeight == 1:
 			#if this object is glass
-			hitPointColor = hitPointColor + self.getRefractionColor(currObj,prevHitPos,hitResult)
+			hitPointColor = hitPointColor + self.getRefractionColor(currObj,prevHitPos,hitResult,refractDepth,reflectDepth)
 		elif currObj.material.refractionWeight != 1 and currObj.material.reflectionWeight == 1:
 			#If this object is perfect mirror
-			hitPointColor = hitPointColor + self.getMirrorReflectionColor(currObj,prevHitPos,hitResult)
+			hitPointColor = hitPointColor + self.getMirrorReflectionColor(currObj,prevHitPos,hitResult,reflectDepth)
 		else:
 			#Diffuse material
 			hitPointColor = hitPointColor + self.getHitPointColor(hitResult)
 
-			#Recurvsive path tracing, only for diffuse material--------------------
-			if recursiveCnt < self.indirectDepthLimit:
-				recursiveCnt += 1
+			#Recurvsive path tracing, only for Diffuse material--------------------
+			if indirectDepth < self.indirectDepthLimit:
+				indirectDepth += 1
 				incomingRayDir = hitResult[1] - prevHitPos
 
 				tangentAxis = incomingRayDir.cross(hitResult[2]).normalized()
@@ -230,7 +220,7 @@ class RenderProcess(multiprocessing.Process):
 					indirectHitBool = self.scene.getClosestIntersection(indirectRay,indirectHitResult)
 
 					if indirectHitBool:
-						indirectHitPColor = self.getColor(indirectHitResult,hitResult[1],recursiveCnt) #get the indirect color
+						indirectHitPColor = self.getColor(indirectHitResult,hitResult[1],indirectDepth) #get the indirect color
 						lambert = hitResult[2].dot(indirectRayDir)
 						indirectPointDist = (indirectHitResult[1] - hitResult[1]).length()
 						indirectLitColor = indirectHitPColor * lambert  #/ (2*math.pi*math.pow(indirectPointDist,2))

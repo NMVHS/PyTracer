@@ -31,6 +31,7 @@ def main():
 	greenLambert = Material(diffuseColor=Vector(0,0.9,0))
 	whiteLambert = Material(diffuseColor=Vector(0.9,0.9,0.9))
 	mirror = Material(reflectionColor=Vector(1,1,1),reflectionWeight=1)
+	redMirror = Material(reflectionColor=Vector(0.9,0,0),reflectionWeight=1)
 	emissive = Material(emissionAmount=500)
 	glass = Material(refractionWeight=1,reflectionWeight=1)
 	#-------Scene--------
@@ -48,14 +49,14 @@ def main():
 	quad01 = Quad(Vector(-50,-50,-186),Vector(-50,-50,-76),Vector(50,-50,-76),Vector(50,-50,-186),material=whiteLambert) #bottom wall
 	quad02 = Quad(Vector(-50,50,-76),Vector(-50,-50,-76),Vector(-50,-50,-186),Vector(-50,50,-186),material=redLambert) #left wall
 	quad03 = Quad(Vector(-50,50,-186),Vector(-50,-50,-186),Vector(50,-50,-186),Vector(50,50,-186),material=whiteLambert)  #back wall
-	quad04 = Quad(Vector(50,50,-186),Vector(50,-50,-186),Vector(50,-50,-76),Vector(50,50,-76),material=greenLambert) #right wall
+	quad04 = Quad(Vector(50,50,-186),Vector(50,-50,-186),Vector(50,-50,-76),Vector(50,50,-76),material=mirror) #right wall
 	quad05 = Quad(Vector(-50,50,-76),Vector(-50,50,-186),Vector(50,50,-186),Vector(50,50,-76),material=emissive) #top wall
 
 	light01 = DiskLight(Vector(0,40,-150),30) #light source on the top
-	light02 = PointLight(Vector(-20,40,-160))
+	light02 = PointLight(Vector(-20,40,-120))
 	light03 = PointLight(Vector(20,30,-90))
 
-	newScene = Scene({"geometry":[quad01,quad02,quad03,quad04,quad05,sphere02,sphere03],"light":[light01]})
+	newScene = Scene({"geometry":[quad01,quad02,quad03,quad04,quad05,sphere02,sphere03],"light":[light02]})
 
 	cam = Camera(Vector(0,0,0),Vector(0,0,1),60)
 
