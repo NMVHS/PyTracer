@@ -104,7 +104,7 @@ class RenderProcess(multiprocessing.Process):
 		print("Process Finished - " + multiprocessing.current_process().name + " Render time: " + str(processRenderTime))
 		sys.stdout.flush()
 
-	def getRefractionColor(self,currObj,prevHitPos,hitResult,refractDepth,reflectDepth):
+	def getRefractionColor(self,currObj,prevHitPos,hitResult,indirectDepth,refractDepth,reflectDepth):
 		refractDepth += 1
 
 		refractionCol = Vector(0,0,0)
@@ -151,17 +151,21 @@ class RenderProcess(multiprocessing.Process):
 			fresnelReflect = 0.5 * (fresnelS + fresnelP)
 			fresnelRefract = 1 - fresnelReflect
 			#Get the reflection color
-			reflectionCol = reflectionCol + self.getMirrorReflectionColor(currObj,prevHitPos,hitResult,reflectDepth)
+			reflectionCol = reflectionCol + self.getMirrorReflectionColor(currObj,prevHitPos,hitResult,indirectDepth,reflectDepth)
 
 		if refractionHitBool:
 			prevHitPos = hitResult[1]
 			hitResult = refractHitResult
-			refractionCol = refractionCol + self.getColor(hitResult,prevHitPos,indirectDepth=self.indirectDepthLimit,refractDepth=refractDepth)
+			if refractDepth < self.refractionMaxDepth:
+				refractionCol = refractionCol + self.getColor(hitResult,prevHitPos,indirectDepth=indirectDepth,refractDepth=refractDepth)
+			else:
+				refractionCol = refractionCol + self.getHitPointColor(hitResult)
+
 			fresnelCol = fresnelCol + refractionCol * fresnelRefract + reflectionCol*fresnelReflect
 
 		return fresnelCol
 
-	def getMirrorReflectionColor(self,currObj,prevHitPos,hitResult,reflectDepth):
+	def getMirrorReflectionColor(self,currObj,prevHitPos,hitResult,indirectDepth,reflectDepth):
 		reflectionCol = Vector(0,0,0)
 		reflectDepth += 1
 		#If this object's material is perfect mirror, and maybe the reflected ray hits mirror again
@@ -177,7 +181,7 @@ class RenderProcess(multiprocessing.Process):
 			prevHitPos = hitResult[1]
 			hitResult = reflectHitResult
 			if reflectDepth < self.reflectionMaxDepth:
-				reflectionCol = reflectionCol + self.getColor(hitResult,prevHitPos,indirectDepth=self.indirectDepthLimit,reflectDepth=reflectDepth).colorMult(currObj.material.reflectionColor)
+				reflectionCol = reflectionCol + self.getColor(hitResult,prevHitPos,indirectDepth=indirectDepth,reflectDepth=reflectDepth).colorMult(currObj.material.reflectionColor)
 			else:
 				reflectionCol = reflectionCol + self.getHitPointColor(hitResult).colorMult(currObj.material.reflectionColor)
 
@@ -190,10 +194,10 @@ class RenderProcess(multiprocessing.Process):
 
 		if currObj.material.refractionWeight == 1 and currObj.material.reflectionWeight == 1:
 			#if this object is glass
-			hitPointColor = hitPointColor + self.getRefractionColor(currObj,prevHitPos,hitResult,refractDepth,reflectDepth)
+			hitPointColor = hitPointColor + self.getRefractionColor(currObj,prevHitPos,hitResult,indirectDepth,refractDepth,reflectDepth)
 		elif currObj.material.refractionWeight != 1 and currObj.material.reflectionWeight == 1:
 			#If this object is perfect mirror
-			hitPointColor = hitPointColor + self.getMirrorReflectionColor(currObj,prevHitPos,hitResult,reflectDepth)
+			hitPointColor = hitPointColor + self.getMirrorReflectionColor(currObj,prevHitPos,hitResult,indirectDepth,reflectDepth)
 		else:
 			#Diffuse material
 			hitPointColor = hitPointColor + self.getHitPointColor(hitResult)
@@ -220,7 +224,7 @@ class RenderProcess(multiprocessing.Process):
 					indirectHitBool = self.scene.getClosestIntersection(indirectRay,indirectHitResult)
 
 					if indirectHitBool:
-						indirectHitPColor = self.getColor(indirectHitResult,hitResult[1],indirectDepth) #get the indirect color
+						indirectHitPColor = self.getColor(indirectHitResult,hitResult[1],indirectDepth,0,0) #get the indirect color
 						lambert = hitResult[2].dot(indirectRayDir)
 						indirectPointDist = (indirectHitResult[1] - hitResult[1]).length()
 						indirectLitColor = indirectHitPColor * lambert  #/ (2*math.pi*math.pow(indirectPointDist,2))
@@ -231,12 +235,6 @@ class RenderProcess(multiprocessing.Process):
 				hitPointColor = hitPointColor + indirectColor.colorMult(matColor)
 
 		return hitPointColor
-
-
-	def getRandomDirection(self):
-		#Generate random direction based on a unit hemisphere in Cartesian System
-		theta = ramdom.random()
-		phi = random.random()
 
 	def getHitPointColor(self,hitResult):
 		litColor = Vector(0,0,0) #color accumulated after being lit

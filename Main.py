@@ -56,7 +56,7 @@ def main():
 	light02 = PointLight(Vector(-20,40,-120))
 	light03 = PointLight(Vector(20,30,-90))
 
-	newScene = Scene({"geometry":[quad01,quad02,quad03,quad04,quad05,sphere02,sphere03],"light":[light02]})
+	newScene = Scene({"geometry":[quad01,quad02,quad03,quad04,quad05,sphere02,sphere03],"light":[light01]})
 
 	cam = Camera(Vector(0,0,0),Vector(0,0,1),60)
 
