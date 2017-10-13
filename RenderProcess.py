@@ -214,9 +214,9 @@ class RenderProcess(multiprocessing.Process):
 				currentObj = self.scene.getObjectById(hitResult[3])
 
 				for i in range(self.indirectSamples):
-					tangentRotAmount = (random.random()-0.5)*math.pi
-					biTrangentRotAmount = (random.random()-0.5)*math.pi
-					indirectRayDir = hitResult[2].rot("A",tangentRotAmount,tangentAxis).rot("A",biTrangentRotAmount,biTangentAxis)
+					tangentRotAmount = random.random()*0.5*math.pi #range: [0,0.5pi)
+					biTrangentRotAmount = random.random()*2*math.pi #range: [0,pi)
+					indirectRayDir = hitResult[2].rot("A",tangentRotAmount,tangentAxis).rot("A",biTrangentRotAmount,hitResult[2])
 					biasedOrigin = hitResult[1] + indirectRayDir * self.bias
 					indirectRay = Ray(biasedOrigin,indirectRayDir)
 
