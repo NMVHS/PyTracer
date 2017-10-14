@@ -271,7 +271,13 @@ class RenderProcess(multiprocessing.Process):
 					shadowRayDir = eachLight.pos - hitResult[1]
 	 			#lambert is the cosine
 				lambert = hitResult[2].dot(shadowRayDir.normalized())
+				facingCam = hitResult[2].dot((self.cam.pos - hitResult[1]).normalized())
+				if lambert < 0 and facingCam < 0:
+					#poly is not facing the light or cam
+					lambert = abs(lambert)
+
 				if lambert > 0:
+					#poly is facing the light
 					offsetOrigin = hitResult[1] + shadowRayDir.normalized() * self.bias #slightly offset the ray start point because the origin itself is a root
 					shadowRay = Ray(offsetOrigin,shadowRayDir)
 					temp_t = shadowRayDir.length() #length form hit point to light

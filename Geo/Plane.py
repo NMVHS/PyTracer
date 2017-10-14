@@ -14,7 +14,8 @@ class Plane(Geometry):
 
 	def getIntersection(self,ray,closestHit,result):
 		#t = (anyplanePoint - ray.origin).dot(plane.normal) / (ray.dir.dot(plane.normal))
-		if ray.dir.dot(self.normal) >= 0: #ray hits the back side of the plane/ parallel
+		if ray.dir.dot(self.normal) == 0:
+			#ray is allowed to hit the back side of the plane, but not parallel
 			return False
 
 		t = (self.pos - ray.origin).dot(self.normal) / (ray.dir.dot(self.normal))
