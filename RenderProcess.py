@@ -154,10 +154,11 @@ class RenderProcess(multiprocessing.Process):
 			reflectionCol = reflectionCol + self.getMirrorReflectionColor(currObj,prevHitPos,hitResult,indirectDepth,reflectDepth,reflectDist)
 
 		if refractionHitBool:
+			reflectDist = reflectDist + (refractHitResult[1] - hitResult[1]).length() #accumulation of distance of reflection
 			prevHitPos = hitResult[1]
 			hitResult = refractHitResult
 			if refractDepth < self.refractionMaxDepth:
-				refractionCol = refractionCol + self.getColor(hitResult,prevHitPos,indirectDepth=indirectDepth,refractDepth=refractDepth)
+				refractionCol = refractionCol + self.getColor(hitResult,prevHitPos,indirectDepth=indirectDepth,refractDepth=refractDepth,reflectDist=reflectDist)
 			else:
 				refractionCol = refractionCol + self.getHitPointColor(hitResult)
 

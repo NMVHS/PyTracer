@@ -1,5 +1,6 @@
 import multiprocessing, json
 import numpy as np
+from random import shuffle
 from datetime import datetime
 from PyQt5.QtGui import QImage, QColor
 from PyQt5.QtCore import QThread, pyqtSignal, pyqtSlot
@@ -20,6 +21,7 @@ class RenderThread(QThread):
 		self.canvas.fill(0) # Very important, need to set default color
 		threadSettings = self.loadSettings()
 		self.bucketSize = threadSettings["BucketSize"]
+		self.bucketOrder = threadSettings["BucketOrder"]
 
 	def loadSettings(self):
 		with open("RenderSettings.json") as settingsData:
@@ -39,6 +41,36 @@ class RenderThread(QThread):
 			for x in range(0,bucketWcnt):
 				newBucketSplit = [x*self.bucketSize,y*self.bucketSize,0]
 				bucketSplitData.append(newBucketSplit)
+
+		#Shuffle the buckets
+		if self.bucketOrder == 1:
+			#Buckets in random order:
+			shuffle(bucketSplitData)
+		elif self.bucketOrder == 2:
+			#Buckets start from the center
+			currIndex = math.floor(len(bucketSplitData)/2)-1
+			shuffledBucketList = manager.list()
+			shuffledBucketList.append(bucketSplitData[currIndex])
+			twoStepLimit = 1
+			twoStepCnt = 0
+			stepDir = 0
+			switchList = [1,bucketHcnt,-1,-bucketHcnt] #move right,down,left,up
+			while len(shuffledBucketList) < len(bucketSplitData):
+				currIndex += switchList[stepDir]
+				shuffledBucketList.append(bucketSplitData[currIndex])
+				twoStepCnt += 1
+				if twoStepCnt >= twoStepLimit:
+					if stepDir <3:
+						stepDir += 1
+					else:
+						stepDir = 0
+
+					if twoStepCnt == 2:
+						twoStepCnt = 0
+						twoStepLimit += 1
+
+			bucketSplitData = shuffledBucketList
+			print(bucketSplitData)
 
 		return bucketSplitData
 

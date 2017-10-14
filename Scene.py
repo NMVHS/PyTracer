@@ -64,12 +64,12 @@ class Scene:
 							if currHitObj.visible == False:
 								#if this area light is invisible
 								hitBool = False
-					else:
-						if currHitObj.material.refractionWeight < 1:
-							#if this object is not transparent
-							break
-						else:
-							hitBool = False
+					# else:
+					# 	if currHitObj.material.refractionWeight < 1:
+					# 		#if this object is not transparent
+					# 		break
+					# 	else:
+					# 		hitBool = False
 
 		result.extend(closestHitResult)
 		return hitBool
