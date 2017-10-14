@@ -38,7 +38,7 @@ def main():
 	#-------Scene--------
 	#important! This is a right handed coordinate system!
 	sphere01 = Sphere(Vector(-15,-30,-136),20,material=whiteLambert)
-	sphere02 = Sphere(Vector(10,-20,-146),30,material=whiteLambert)
+	sphere02 = Sphere(Vector(10,-20,-146),30,material=mirror)
 	sphere03 = Sphere(Vector(-25,-35,-115),15,material=glass)
 	sphere04 = Sphere(Vector(25,-35,-100),15,material=whiteLambert)
 	#plane01 = Plane(Vector(0,-50,-136),Vector(0,1,0),material=whiteLambert) #bottom wall
@@ -55,7 +55,7 @@ def main():
 	quad04 = Quad(Vector(50,50,-186),Vector(50,-50,-186),Vector(50,-50,-76),Vector(50,50,-76),material=greenLambert) #right wall
 	quad05 = Quad(Vector(-50,50,-76),Vector(-50,50,-186),Vector(50,50,-186),Vector(50,50,-76),material=emissive) #top wall
 
-	light01 = DiskLight(Vector(0,48,-136),30,normal=Vector(0,-1,0),samples=16,isDoubleSided=False,visible=True) #light source on the top
+	light01 = DiskLight(Vector(0,48,-136),30,normal=Vector(0,-1,0),samples=8,isDoubleSided=True,visible=True) #light source on the top
 	light02 = PointLight(Vector(-20,40,-120))
 	light03 = PointLight(Vector(20,30,-90))
 

@@ -104,7 +104,7 @@ class RenderProcess(multiprocessing.Process):
 		print("Process Finished - " + multiprocessing.current_process().name + " Render time: " + str(processRenderTime))
 		sys.stdout.flush()
 
-	def getRefractionColor(self,currObj,prevHitPos,hitResult,indirectDepth,refractDepth,reflectDepth):
+	def getRefractionColor(self,currObj,prevHitPos,hitResult,indirectDepth,refractDepth,reflectDepth,reflectDist):
 		refractDepth += 1
 
 		refractionCol = Vector(0,0,0)
@@ -151,7 +151,7 @@ class RenderProcess(multiprocessing.Process):
 			fresnelReflect = 0.5 * (fresnelS + fresnelP)
 			fresnelRefract = 1 - fresnelReflect
 			#Get the reflection color
-			reflectionCol = reflectionCol + self.getMirrorReflectionColor(currObj,prevHitPos,hitResult,indirectDepth,reflectDepth)
+			reflectionCol = reflectionCol + self.getMirrorReflectionColor(currObj,prevHitPos,hitResult,indirectDepth,reflectDepth,reflectDist)
 
 		if refractionHitBool:
 			prevHitPos = hitResult[1]
@@ -165,7 +165,7 @@ class RenderProcess(multiprocessing.Process):
 
 		return fresnelCol
 
-	def getMirrorReflectionColor(self,currObj,prevHitPos,hitResult,indirectDepth,reflectDepth):
+	def getMirrorReflectionColor(self,currObj,prevHitPos,hitResult,indirectDepth,reflectDepth,reflectDist):
 		reflectionCol = Vector(0,0,0)
 		reflectDepth += 1
 		#If this object's material is perfect mirror, and maybe the reflected ray hits mirror again
@@ -178,16 +178,17 @@ class RenderProcess(multiprocessing.Process):
 		reflectionHitBool = self.scene.getClosestIntersection(reflectionRay,reflectHitResult)
 
 		if reflectionHitBool:
+			reflectDist = reflectDist + (reflectHitResult[1] - hitResult[1]).length() #accumulation of distance of reflection
 			prevHitPos = hitResult[1]
 			hitResult = reflectHitResult
 			if reflectDepth < self.reflectionMaxDepth:
-				reflectionCol = reflectionCol + self.getColor(hitResult,prevHitPos,indirectDepth=indirectDepth,reflectDepth=reflectDepth).colorMult(currObj.material.reflectionColor)
+				reflectionCol = reflectionCol + self.getColor(hitResult,prevHitPos,indirectDepth=indirectDepth,reflectDepth=reflectDepth,reflectDist=reflectDist).colorMult(currObj.material.reflectionColor)
 			else:
 				reflectionCol = reflectionCol + self.getHitPointColor(hitResult).colorMult(currObj.material.reflectionColor)
 
 		return reflectionCol
 
-	def getColor(self,hitResult,prevHitPos,indirectDepth=0,reflectDepth=0,refractDepth=0):
+	def getColor(self,hitResult,prevHitPos,indirectDepth=0,reflectDepth=0,refractDepth=0,reflectDist=0):
 		#Important, when calculating refraction/mirror reflection, pass indirectDepthLimit to getColor to avoid infinite loop
 		currObj = self.scene.getObjectById(hitResult[3])
 		hitPointColor = Vector(0,0,0)
@@ -195,16 +196,23 @@ class RenderProcess(multiprocessing.Process):
 		if "AreaLight" in currObj.type:
 			#if this object is AreaLight, return lightColor * lightIntensity
 			if currObj.visible:
-				litColor = currObj.color * currObj.intensity #will be clipped in renderThread
+				#if hit a light, return color is attenuated. And will be clipped in renderThread
+				if indirectDepth == 0:
+					#camera ray, no attenuation
+					litColor = currObj.color * currObj.intensity
+				else:
+					#indirect ray, return attenuated value
+					litColor = currObj.color * currObj.intensity / (4*math.pi*math.pow(reflectDist,2))
+
 				hitPointColor = hitPointColor + litColor
 				return hitPointColor
 
 		if currObj.material.refractionWeight == 1 and currObj.material.reflectionWeight == 1:
 			#if this object is glass
-			hitPointColor = hitPointColor + self.getRefractionColor(currObj,prevHitPos,hitResult,indirectDepth,refractDepth,reflectDepth)
+			hitPointColor = hitPointColor + self.getRefractionColor(currObj,prevHitPos,hitResult,indirectDepth,refractDepth,reflectDepth,reflectDist)
 		elif currObj.material.refractionWeight != 1 and currObj.material.reflectionWeight == 1:
 			#If this object is perfect mirror
-			hitPointColor = hitPointColor + self.getMirrorReflectionColor(currObj,prevHitPos,hitResult,indirectDepth,reflectDepth)
+			hitPointColor = hitPointColor + self.getMirrorReflectionColor(currObj,prevHitPos,hitResult,indirectDepth,reflectDepth,reflectDist)
 		else:
 			#Diffuse material
 			hitPointColor = hitPointColor + self.getHitPointColor(hitResult)
@@ -231,20 +239,17 @@ class RenderProcess(multiprocessing.Process):
 					indirectHitBool = self.scene.getClosestIntersection(indirectRay,indirectHitResult)
 
 					if indirectHitBool:
-						indirectHitPColor = self.getColor(indirectHitResult,hitResult[1],indirectDepth,0,0) #get the indirect color
-						lambert = hitResult[2].dot(indirectRayDir)
 						indirectPointDist = (indirectHitResult[1] - hitResult[1]).length()
+						reflectDist = reflectDist + indirectPointDist
+						indirectHitPColor = self.getColor(indirectHitResult,hitResult[1],indirectDepth,0,0,reflectDist) #get the indirect color
+						lambert = hitResult[2].dot(indirectRayDir)
 
-						if "AreaLight" in self.scene.getObjectById(indirectHitResult[3]).type:
-							#if indirect ray hits a light, indirectHitPColor = lightColor * lightIntensity
-							indirectLitColor = indirectHitPColor * lambert / (4*math.pi*math.pow(indirectPointDist,2))
-						else:
-							indirectLitColor = indirectHitPColor * lambert  #/ (2*math.pi*math.pow(indirectPointDist,2))
+						indirectLitColor = indirectHitPColor * lambert  #/ (2*math.pi*math.pow(indirectPointDist,2))
 						indirectColor = indirectColor + indirectLitColor
 
 				indirectColor = indirectColor / self.indirectSamples * 2 * math.pi
 				matColor = currentObj.material.diffuseColor
-				hitPointColor = hitPointColor + indirectColor.colorMult(matColor) * 0.3 #arbitrary contribution number
+				hitPointColor = hitPointColor + indirectColor.colorMult(matColor) * 0.3 #arbitrary contribution multiplier
 
 		return hitPointColor
 
