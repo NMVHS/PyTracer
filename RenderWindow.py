@@ -1,9 +1,10 @@
 import sys, json
-from PyQt5.QtWidgets import QApplication, QWidget, QGraphicsScene, QGraphicsView, QGraphicsPixmapItem
+from PyQt5.QtWidgets import QWidget, QGraphicsScene, QGraphicsView, QGraphicsPixmapItem
 from PyQt5.QtGui import QPainter, QImage, QPixmap, QColor
+from PyQt5.QtCore import Qt
 from RenderThread import RenderThread
 
-class RenderWindow:
+class RenderWindow(QWidget):
 	def __init__(self):
 		#loadSettings from json file
 		windowSettings = self.loadSettings()
@@ -11,29 +12,34 @@ class RenderWindow:
 		self.height = windowSettings["ImageHeight"]
 
 		#-------ui initialization-------
-		self.app = QApplication(sys.argv)
-		self.window = QWidget()
-		self.window.setFixedSize(self.width,self.height)
-		self.window.move(50,50)
-		self.window.setWindowTitle('PyTracer')
+		super().__init__()
+		self.setFixedSize(self.width,self.height)
+		self.move(50,50)
+		self.setWindowTitle('PyTracer')
 
 		#-----initialize a QImage, so we can maniputalte the pixels
 		self.bgImage = QImage(self.width,self.height,4) #QImage.Format_RGB32
 		self.bgImage.fill(QColor(0,0,0)) # important, give canvas a default color
 
-		self.graphic = QGraphicsScene(0,0,self.width,self.height,self.window)
+		self.graphic = QGraphicsScene(0,0,self.width,self.height,self)
 		self.pixmap = QPixmap().fromImage(self.bgImage)
 		self.graphicItem = self.graphic.addPixmap(self.pixmap)
 		self.painter = QPainter(self.pixmap)
 
-		self.graphicView = QGraphicsView(self.graphic,self.window)
-		self.window.show()
+		self.graphicView = QGraphicsView(self.graphic,self)
+		self.show()
 
 	def loadSettings(self):
 		with open("RenderSettings.json") as settingsData:
 			renderSettings = json.load(settingsData)
 
 		return renderSettings["RenderWindow"]
+
+	def keyPressEvent(self,event):
+		if event.key() == Qt.Key_S:
+			self.saveImage()
+		elif event.key() == Qt.Key_B:
+			print("Show Buckets")
 
 	def startRender(self,scene,cam):
 		#start render in a new thread

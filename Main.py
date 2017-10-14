@@ -6,7 +6,7 @@
 
 #-------------------------
 import sys, math, multiprocessing, numpy
-
+from PyQt5.QtWidgets import QApplication
 #------------------------
 from Geo.Vector import Vector
 from Geo.Ray import Ray
@@ -25,6 +25,7 @@ from RenderWindow import RenderWindow
 
 
 def main():
+	renderApp = QApplication(sys.argv)
 	renderView = RenderWindow() #All setting load from json file
 
 	redLambert = Material(diffuseColor=Vector(0.9,0,0))
@@ -61,12 +62,12 @@ def main():
 	light02 = PointLight(Vector(-20,40,-120))
 	light03 = PointLight(Vector(20,30,-90))
 
-	newScene = Scene({"geometry":[quad01,quad02,quad03,quad04,quad05,sphere02,quad06],"light":[light01]})
+	newScene = Scene({"geometry":[quad01,quad02,quad03,quad04,quad05,sphere02,quad06],"light":[light02]})
 
 	cam = Camera(Vector(0,0,0),Vector(0,0,1),60)
 	renderView.startRender(newScene,cam)
 
-	sys.exit(renderView.app.exec_())
+	sys.exit(renderApp.exec_())
 
 
 if __name__ == "__main__":
