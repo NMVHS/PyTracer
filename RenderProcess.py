@@ -192,6 +192,13 @@ class RenderProcess(multiprocessing.Process):
 		currObj = self.scene.getObjectById(hitResult[3])
 		hitPointColor = Vector(0,0,0)
 
+		if "AreaLight" in currObj.type:
+			#if this object is AreaLight, return lightColor * lightIntensity
+			if currObj.visible:
+				litColor = currObj.color * currObj.intensity #will be clipped in renderThread
+				hitPointColor = hitPointColor + litColor
+				return hitPointColor
+
 		if currObj.material.refractionWeight == 1 and currObj.material.reflectionWeight == 1:
 			#if this object is glass
 			hitPointColor = hitPointColor + self.getRefractionColor(currObj,prevHitPos,hitResult,indirectDepth,refractDepth,reflectDepth)
@@ -227,7 +234,12 @@ class RenderProcess(multiprocessing.Process):
 						indirectHitPColor = self.getColor(indirectHitResult,hitResult[1],indirectDepth,0,0) #get the indirect color
 						lambert = hitResult[2].dot(indirectRayDir)
 						indirectPointDist = (indirectHitResult[1] - hitResult[1]).length()
-						indirectLitColor = indirectHitPColor * lambert  #/ (2*math.pi*math.pow(indirectPointDist,2))
+
+						if "AreaLight" in self.scene.getObjectById(indirectHitResult[3]).type:
+							#if indirect ray hits a light, indirectHitPColor = lightColor * lightIntensity
+							indirectLitColor = indirectHitPColor * lambert / (4*math.pi*math.pow(indirectPointDist,2))
+						else:
+							indirectLitColor = indirectHitPColor * lambert  #/ (2*math.pi*math.pow(indirectPointDist,2))
 						indirectColor = indirectColor + indirectLitColor
 
 				indirectColor = indirectColor / self.indirectSamples * 2 * math.pi
@@ -242,10 +254,14 @@ class RenderProcess(multiprocessing.Process):
 		#iterate through all the lights using shadow ray, check if object is in shadow
 		for eachLight in self.scene.lights:
 			for i in range(eachLight.samples):
-				if eachLight.type == 'Area':
+				if "AreaLight" in eachLight.type:
 					shadowRayDir = eachLight.getRandomSample() - hitResult[1]
-					# if shadowRayDir.normalized().dot(eachLight.normal) > 0: #single side area light
-					# 	continue
+					if eachLight.isDoubleSided == False:
+						#single side area light
+						hitLightBack = shadowRayDir.normalized().dot(eachLight.normal)
+						if hitLightBack > 0:
+							break #this is a cheat, only works for disk of planeLight
+							#continue
 				else:
 					shadowRayDir = eachLight.pos - hitResult[1]
 	 			#lambert is the cosine
@@ -255,7 +271,7 @@ class RenderProcess(multiprocessing.Process):
 					shadowRay = Ray(offsetOrigin,shadowRayDir)
 					temp_t = shadowRayDir.length() #length form hit point to light
 					shadowRayResult = [temp_t]
-					inShadow = self.scene.getClosestIntersection(shadowRay,shadowRayResult)
+					inShadow = self.scene.getClosestIntersection(shadowRay,shadowRayResult,eachLight)
 					if not inShadow:
 						litColor = litColor + eachLight.color * (eachLight.intensity * lambert / (4*math.pi*math.pow(temp_t,2)))
 

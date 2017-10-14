@@ -1,4 +1,5 @@
 from Geo.Vector import Vector
+from Geo.Disk import Disk
 import random, math
 
 class Light:
@@ -9,22 +10,24 @@ class Light:
 		self.intensity = intensity
 		self.color = color
 		self.area = 1
-
+		self.type = "Light"
 
 class PointLight(Light):
 	def __init__(self,pos,intensity = 5000,color = Vector(1,1,1)):
 		super().__init__(pos,intensity,color)
-		self.type = 'Point'
+		self.type = "Point" + self.type
 		self.samples = 1
 
-
-class DiskLight(Light):
-	def __init__(self,pos,radius,intensity = 6, color = Vector(1,1,1),samples = 32,normal=Vector(0,-1,0)):
-		super().__init__(pos,intensity,color)
-		self.type = 'Area'
+class DiskLight(Light,Disk):
+	def __init__(self,pos,radius,intensity = 6, color = Vector(1,1,1),samples = 8,normal=Vector(0,-1,0),isDoubleSided=False,visible=True):
+		Disk.__init__(self,pos,radius,normal)
+		Light.__init__(self,pos,intensity,color)
+		self.type = "AreaLight_Disk"
 		self.radius = radius
 		self.samples = samples
 		self.normal = normal
+		self.isDoubleSided = isDoubleSided
+		self.visible = visible
 		self.area = math.pi * math.pow(radius,2)
 		#self.samplePtList = self.getRandomSample()
 
@@ -42,6 +45,6 @@ class DiskLight(Light):
 class RectangleLight(Light):
 	def __init__(self,pos,radius,intensity = 10, color = Vector(1,1,1), samples = 8):
 		super().__init__(pos,intensity,color)
-		self.type = 'Area'
+		self.type = "AreaLight_Rectangle"
 		self.radius = radius
 		self.samples = samples

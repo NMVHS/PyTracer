@@ -8,8 +8,8 @@
   },
   "RenderProcess": {
     "AAsamples": 4,
-    "IndirectSamples":32,
-    "IndirectDepth":1,
+    "IndirectSamples":8,
+    "IndirectDepth":0,
     "Bias":0.0001,
     "ReflectionMaxDepth":4,
     "RefractionMaxDepth":5
