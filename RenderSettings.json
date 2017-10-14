@@ -7,9 +7,9 @@
     "BucketSize":50
   },
   "RenderProcess": {
-    "AAsamples": 4,
-    "IndirectSamples":8,
-    "IndirectDepth":0,
+    "AAsamples": 1,
+    "IndirectSamples":16,
+    "IndirectDepth":1,
     "Bias":0.0001,
     "ReflectionMaxDepth":4,
     "RefractionMaxDepth":5

@@ -244,7 +244,7 @@ class RenderProcess(multiprocessing.Process):
 
 				indirectColor = indirectColor / self.indirectSamples * 2 * math.pi
 				matColor = currentObj.material.diffuseColor
-				hitPointColor = hitPointColor + indirectColor.colorMult(matColor)
+				hitPointColor = hitPointColor + indirectColor.colorMult(matColor) * 0.3 #arbitrary contribution number
 
 		return hitPointColor
 
