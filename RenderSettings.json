@@ -9,9 +9,9 @@
     "BucketOrder":2
   },
   "RenderProcess": {
-    "AAsamples": 4,
+    "AAsamples": 8,
     "IndirectSamples":8,
-    "IndirectDepth":0,
+    "IndirectDepth":1,
     "Bias":0.0001,
     "ReflectionMaxDepth":4,
     "RefractionMaxDepth":5

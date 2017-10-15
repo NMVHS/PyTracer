@@ -30,9 +30,9 @@ def main():
 
 	#--------------------Scene Modeling-------------------------------
 	#Materials--------------------------------------------
-	redLambert = Material(diffuseColor=Vector(0.9,0,0))
+	redLambert = Material(diffuseColor=Vector(0.9,0.1,0.1))
 	blueLambert = Material(diffuseColor=Vector(0,0,0.9))
-	greenLambert = Material(diffuseColor=Vector(0,0.9,0))
+	greenLambert = Material(diffuseColor=Vector(0.1,0.9,0.1))
 	whiteLambert = Material(diffuseColor=Vector(0.9,0.9,0.9))
 	mirror = Material(reflectionColor=Vector(1,1,1),reflectionWeight=1)
 	redMirror = Material(reflectionColor=Vector(0.9,0,0),reflectionWeight=1)
@@ -65,7 +65,7 @@ def main():
 	light02 = PointLight(Vector(-20,40,-120))
 	light03 = PointLight(Vector(20,30,-90))
 
-	newScene = Scene({"geometry":[quad01,quad02,quad03,quad04,quad05,sphere02,sphere03,sphere04],"light":[light02]})
+	newScene = Scene({"geometry":[quad01,quad02,quad03,quad04,quad05,sphere02,sphere03,sphere04],"light":[light01]})
 
 	cam = Camera(Vector(0,0,0),Vector(0,0,1),60)
 	renderView.startRender(newScene,cam)
