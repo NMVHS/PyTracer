@@ -12,8 +12,12 @@
     * Triangle intersection [✓]
     * Quad intersection [✓]
 
-  * Camera:
-    * Camera exposure
+  * Core:
+    * Camera Ray [✓]
+    * Shadow Ray / Direct Lighting [✓]
+    * Render Equation integration
+    * Recursive tracing [Working but slow]
+    * Multiprocessing [✓]
 
   * Light:
     * Point light [✓]
@@ -26,11 +30,10 @@
     * Glossy
     * Glass [✓]
 
-  * Core:
-    * Camera Ray [✓]
-    * Shadow Ray / Direct Lighting [✓]
-    * Render Equation integration
-    * Recursive tracing [Working but slow]
+  * Camera:
+    * Camera exposure
+    * Depth of field
+    * Motion blur
 
   * Optimization:
     * multiprocessing [✓]
@@ -38,12 +41,12 @@
 
   * Imaging:
     * Gamma Correction [✓]
+    * Tone mapping
 
 * GUI Features:
   * Render Window [✓]
   * Bucket Render [Need improvement]
   * Real-time update [✓]
-  * multiprocessing [✓]
   * Separate thread for window [✓]
   * Render time calculation [✓]
   * Interactive Render
