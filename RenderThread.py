@@ -9,8 +9,8 @@ from RenderProcess import RenderProcess
 class RenderThread(QThread):
 	#This is a separate thread from UI, this thread will spawn tasks to multi processing
 	#This thread itself will be rendering as well
-	updateImgSignal =pyqtSignal(list)
-
+	updateImgSignal = pyqtSignal(list)
+	bucketProgressSignal = pyqtSignal(list)
 	def __init__(self,width,height,scene,cam):
 		QThread.__init__(self)
 		self.width = width
@@ -73,6 +73,8 @@ class RenderThread(QThread):
 					stepLimit = 0
 
 			bucketSplitData = shuffledBucketList
+		elif self.bucketOrder == 3:
+			bucketSplitData.reverse()
 
 		return bucketSplitData
 
@@ -85,12 +87,16 @@ class RenderThread(QThread):
 		jobs = []
 		jobsQueue = multiprocessing.Queue()
 
-		bucktCntLock = multiprocessing.Lock()
+		bucketCntLock = multiprocessing.Lock()
 		bucketCnt = multiprocessing.Value('i',0)
 
 		for i in range(processCnt):
-			job = RenderProcess(jobsQueue,self.width,self.height,bucketPosData,bucketCnt,bucktCntLock,self.bucketSize,self.scene,self.cam)
+			job = RenderProcess(jobsQueue,self.width,self.height,bucketPosData,bucketCnt,bucketCntLock,self.bucketSize,self.scene,self.cam)
 			jobs.append(job)
+			#----init bucket progress ------
+			bucketProgressX = bucketPosData[i][0]
+			bucketProgressY = bucketPosData[i][1]
+			self.bucketProgressSignal.emit([bucketProgressX,bucketProgressY,self.bucketSize])
 
 		timerStart = datetime.now()
 		for each in jobs:
@@ -101,6 +107,7 @@ class RenderThread(QThread):
 			bucketDataSet = jobsQueue.get() #block until an item is available
 
 			if bucketDataSet == "Done":
+				#Render Process killed
 				processGetCnt = processGetCnt + 1
 			else:
 				#stamp bucket array onto the canvas array
@@ -118,6 +125,15 @@ class RenderThread(QThread):
 				#convert array to QImage
 				bucketBufferImage = QImage(bucketBufferArray.data,self.bucketSize,self.bucketSize,bucketBufferArray.strides[0],QImage.Format_RGB888)
 				self.updateImgSignal.emit([dataX,dataY,bucketBufferImage])
+
+				#BucketLocator needs to move on to the next bucket
+				with bucketCntLock:
+					if bucketCnt.value < len(bucketPosData) * bucketDataSet[4] -1:
+						nextBucketIndex = (bucketCnt.value + 1) % len(bucketPosData)
+						nextLocatorPosX = bucketPosData[nextBucketIndex][0]
+						nextLocatorPosY = bucketPosData[nextBucketIndex][1]
+						#[nextBucketX,nextBucketY,bucketSize,previousBucketX,previousBucketY]
+						self.bucketProgressSignal.emit([nextLocatorPosX,nextLocatorPosY,self.bucketSize,dataX,dataY])
 
 			if processGetCnt>= processCnt:
 				break

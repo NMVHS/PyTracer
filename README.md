@@ -8,14 +8,14 @@
   * Geometry:
     * Sphere intersection [✓]
     * Plane intersection [✓]
-    * Cube Intersection
     * Triangle intersection [✓]
     * Quad intersection [✓]
+    * Cube intersection
 
   * Core:
-    * Camera Ray [✓]
-    * Shadow Ray / Direct Lighting [✓]
-    * Render Equation integration
+    * Camera ray [✓]
+    * Shadow ray / Direct lighting [✓]
+    * Render equation integration
     * Recursive tracing [Working but slow]
     * Multiprocessing [✓]
 
@@ -40,14 +40,14 @@
     * Anti-aliasing [Need improvement]
 
   * Imaging:
-    * Gamma Correction [✓]
+    * Gamma correction [✓]
     * Tone mapping
 
 * GUI Features:
-  * Render Window [✓]
-  * Bucket Render [Need improvement]
+  * Render window [✓]
+  * Bucket render [✓]
   * Real-time update [✓]
   * Separate thread for window [✓]
   * Render time calculation [✓]
-  * Interactive Render
+  * Interactive render
   * Global render settings [✓]

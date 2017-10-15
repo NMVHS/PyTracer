@@ -16,16 +16,28 @@ class RenderWindow(QWidget):
 		self.setFixedSize(self.width,self.height)
 		self.move(50,50)
 		self.setWindowTitle('PyTracer')
+		self.showBuckets = True #show bucket switch
 
 		#-----initialize a QImage, so we can maniputalte the pixels
 		self.bgImage = QImage(self.width,self.height,4) #QImage.Format_RGB32
 		self.bgImage.fill(QColor(0,0,0)) # important, give canvas a default color
+		self.bucketLocator = QImage("bucketLocator.png") #Bucket Locator Image
 
 		self.graphic = QGraphicsScene(0,0,self.width,self.height,self)
-		self.pixmap = QPixmap().fromImage(self.bgImage)
-		self.graphicItem = self.graphic.addPixmap(self.pixmap)
-		self.painter = QPainter(self.pixmap)
 
+		#Canvas-----
+		self.canvasPixmap = QPixmap().fromImage(self.bgImage)
+		self.canvasPainter = QPainter(self.canvasPixmap)
+
+		#Render image pixmap and painter
+		self.renderImagePixmap = QPixmap().fromImage(self.bgImage)
+		self.renderImagePainter = QPainter(self.renderImagePixmap)
+
+		#BuckerLocators pixmap and painter
+		self.locatorPixmap = QPixmap().fromImage(self.bgImage)
+		self.locatorPainter = QPainter(self.locatorPixmap)
+
+		self.graphicItem = self.graphic.addPixmap(self.canvasPixmap)
 		self.graphicView = QGraphicsView(self.graphic,self)
 		self.show()
 
@@ -38,24 +50,54 @@ class RenderWindow(QWidget):
 	def keyPressEvent(self,event):
 		if event.key() == Qt.Key_S:
 			self.saveImage()
-		elif event.key() == Qt.Key_B:
-			print("Show Buckets")
+		elif event.key() == Qt.Key_H:
+			if self.showBuckets:
+				self.showBuckets = False
+				print("Hide Buckets")
+			else:
+				self.showBuckets = True
+				print("Show Buckets")
+
+			self.refreshCanvas()
 
 	def startRender(self,scene,cam):
 		#start render in a new thread
-		self.renderTask = RenderThread(self.width,self.height,scene,cam,)
+		self.renderTask = RenderThread(self.width,self.height,scene,cam)
 		self.renderTask.finished.connect(self.saveImage)
-		self.renderTask.updateImgSignal.connect(self.update)
+		self.renderTask.finished.connect(self.cleanBucketLocators)
+		self.renderTask.updateImgSignal.connect(self.updateRenderImage)
+		self.renderTask.bucketProgressSignal.connect(self.showBucketProgess)
 		self.renderTask.start()
 
-	def update(self,bucketDataList):
+	def cleanBucketLocators(self):
+		self.locatorPainter.drawImage(0,0,self.bgImage)
+		self.refreshCanvas()
+
+	def showBucketProgess(self,bucketProgressPos):
+		bucketSize = bucketProgressPos[2]
+		if len(bucketProgressPos) > 3:
+			blackPatch = QImage(bucketSize,bucketSize,4)
+			blackPatch.fill(0)
+			self.locatorPainter.drawImage(bucketProgressPos[3],bucketProgressPos[4],blackPatch)
+		bucketLocImg = self.bucketLocator.scaled(bucketSize,bucketSize)
+		self.locatorPainter.drawImage(bucketProgressPos[0],bucketProgressPos[1],bucketLocImg)
+		self.refreshCanvas()
+
+	def updateRenderImage(self,bucketDataList):
 		#update the render view, note the render is in another thread]
 		#use QPainter to stamp the image to canvas
-		self.painter.drawImage(bucketDataList[0],bucketDataList[1],bucketDataList[2])
-		self.graphicItem.setPixmap(self.pixmap)
-
+		self.renderImagePainter.drawImage(bucketDataList[0],bucketDataList[1],bucketDataList[2])
+		self.refreshCanvas()
 		#print("Bucket "+ str(bucketDataList[0]) +":"+ str(bucketDataList[1])+" Updated")
 
+	def refreshCanvas(self):
+		self.canvasPainter.drawPixmap(0,0,self.renderImagePixmap)
+		if self.showBuckets:
+			self.canvasPainter.setCompositionMode(12) #plus locator layer on top
+			self.canvasPainter.drawPixmap(0,0,self.locatorPixmap)
+			self.canvasPainter.setCompositionMode(0) #set comp mode back to over
+		self.graphicItem.setPixmap(self.canvasPixmap)
+
 	def saveImage(self):
-		self.pixmap.save("test.png")
+		self.canvasPixmap.save("test.png")
 		print("Image Saved")

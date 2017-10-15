@@ -5,11 +5,11 @@
   },
   "RenderThread":{
     "BucketSize":50,
-    "BucketOrderOptions":["Scanline","Random","Center"],
-    "BucketOrder":0
+    "BucketOrderOptions":["Scanline","Random","Center","Bottom"],
+    "BucketOrder":2
   },
   "RenderProcess": {
-    "AAsamples": 1,
+    "AAsamples": 4,
     "IndirectSamples":8,
     "IndirectDepth":0,
     "Bias":0.0001,

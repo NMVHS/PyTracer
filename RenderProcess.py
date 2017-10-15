@@ -99,7 +99,7 @@ class RenderProcess(multiprocessing.Process):
 
 					bucketArray[j%self.bucketSize,i%self.bucketSize] = [col.x,col.y,col.z]
 
-			returnData = [bucketX,bucketY,bucketArray,thisAAoffset+1]
+			returnData = [bucketX,bucketY,bucketArray,thisAAoffset+1,self.AAsamples]
 			print("bucket" + str(bucketX) + ":" + str(bucketY) + " Rendered by " + multiprocessing.current_process().name)
 
 			#----get the next bucket--------
