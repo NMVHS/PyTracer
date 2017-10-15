@@ -9,7 +9,7 @@
     "BucketOrder":0
   },
   "RenderProcess": {
-    "AAsamples": 4,
+    "AAsamples": 1,
     "IndirectSamples":8,
     "IndirectDepth":0,
     "Bias":0.0001,

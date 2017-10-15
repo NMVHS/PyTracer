@@ -45,9 +45,7 @@ class RenderProcess(multiprocessing.Process):
 				self.bucketCnt.value += 1
 				bucketX = self.bucketPosData[thisBucketId][0]
 				bucketY = self.bucketPosData[thisBucketId][1]
-				bucketResult.append(bucketX)
-				bucketResult.append(bucketY)
-				bucketResult.append(thisAAoffset)
+				bucketResult.extend([bucketX,bucketY,thisAAoffset])
 				return True
 			else:
 				return False
@@ -72,15 +70,13 @@ class RenderProcess(multiprocessing.Process):
 
 		timerStart = datetime.now()
 
-		#-----get the first bucket-------------
 		bucketResult = []
-		self.getNextBucket(bucketResult)
-		bucketX = bucketResult[0]
-		bucketY = bucketResult[1]
-		thisAAoffset = bucketResult[2]
 		#-------Process keeps getting new bucket-------------------------
-		stopSignal = False
-		while True:
+		while self.getNextBucket(bucketResult):
+			bucketX = bucketResult[0]
+			bucketY = bucketResult[1]
+			thisAAoffset = bucketResult[2]
+			bucketResult.clear()
 			#-------------shoot rays---------------------------------------
 			#----Each bucket level--------------
 			for j in range(bucketY,bucketY + self.bucketSize):
@@ -106,23 +102,8 @@ class RenderProcess(multiprocessing.Process):
 			returnData = [bucketX,bucketY,bucketArray,thisAAoffset+1]
 			print("bucket" + str(bucketX) + ":" + str(bucketY) + " Rendered by " + multiprocessing.current_process().name)
 
-
 			#----get the next bucket--------
-			nextBucketResult = []
-			if self.getNextBucket(nextBucketResult):
-				bucketX = nextBucketResult[0]
-				bucketY = nextBucketResult[1]
-				thisAAoffset = nextBucketResult[2]
-				returnData.append(bucketX)
-				returnData.append(bucketY)
-			else:
-				stopSignal = True
-				
 			self.outputQ.put(returnData)
-
-			if stopSignal:
-				break
-
 
 		self.outputQ.put("Done")
 
