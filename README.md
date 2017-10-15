@@ -17,7 +17,6 @@
     * Shadow ray / Direct lighting [✓]
     * Render equation integration
     * Recursive tracing [Working but slow]
-    * Multiprocessing [✓]
 
   * Light:
     * Point light [✓]
@@ -36,7 +35,7 @@
     * Motion blur
 
   * Optimization:
-    * multiprocessing [✓]
+    * Multiprocessing [✓]
     * Anti-aliasing [Need improvement]
 
   * Imaging:
