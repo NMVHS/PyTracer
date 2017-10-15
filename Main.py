@@ -58,11 +58,11 @@ def main():
 
 	quad06 = Quad(Vector(-50,20,-76),Vector(-50,20,-186),Vector(30,20,-186),Vector(30,20,-76),material=whiteLambert) #top matte
 
-	light01 = DiskLight(Vector(0,48,-136),30,normal=Vector(0,-1,0),samples=32,isDoubleSided=True,visible=True) #light source on the top
+	light01 = DiskLight(Vector(0,48,-136),30,normal=Vector(0,-1,0),samples=8,isDoubleSided=True,visible=True) #light source on the top
 	light02 = PointLight(Vector(-20,40,-120))
 	light03 = PointLight(Vector(20,30,-90))
 
-	newScene = Scene({"geometry":[quad01,quad02,quad03,quad04,quad05,sphere02,sphere03,sphere04],"light":[light01]})
+	newScene = Scene({"geometry":[quad01,quad02,quad03,quad04,quad05,sphere02],"light":[light02]})
 
 	cam = Camera(Vector(0,0,0),Vector(0,0,1),60)
 	renderView.startRender(newScene,cam)

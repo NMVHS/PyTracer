@@ -1,4 +1,4 @@
-import multiprocessing, json
+import multiprocessing, json, math
 import numpy as np
 from random import shuffle
 from datetime import datetime
@@ -48,29 +48,31 @@ class RenderThread(QThread):
 			shuffle(bucketSplitData)
 		elif self.bucketOrder == 2:
 			#Buckets start from the center
-			currIndex = math.floor(len(bucketSplitData)/2)-1
+			currIndex = math.floor(len(bucketSplitData)/2 - bucketHcnt/2- 1)
 			shuffledBucketList = manager.list()
 			shuffledBucketList.append(bucketSplitData[currIndex])
-			twoStepLimit = 1
-			twoStepCnt = 0
+			stepAmount = 1
+			stepLimit = 0
 			stepDir = 0
 			switchList = [1,bucketHcnt,-1,-bucketHcnt] #move right,down,left,up
 			while len(shuffledBucketList) < len(bucketSplitData):
-				currIndex += switchList[stepDir]
-				shuffledBucketList.append(bucketSplitData[currIndex])
-				twoStepCnt += 1
-				if twoStepCnt >= twoStepLimit:
-					if stepDir <3:
-						stepDir += 1
-					else:
-						stepDir = 0
+				for i in range(stepAmount):
+					#each Step
+					currIndex += switchList[stepDir]
+					shuffledBucketList.append(bucketSplitData[currIndex])
 
-					if twoStepCnt == 2:
-						twoStepCnt = 0
-						twoStepLimit += 1
+				if stepDir < 3:
+					stepDir += 1
+				else:
+					stepDir = 0
+
+				stepLimit += 1
+
+				if stepLimit == 2:
+					stepAmount += 1
+					stepLimit = 0
 
 			bucketSplitData = shuffledBucketList
-			print(bucketSplitData)
 
 		return bucketSplitData
 
