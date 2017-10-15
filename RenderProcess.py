@@ -20,6 +20,7 @@ class RenderProcess(multiprocessing.Process):
 		self.bucketSize = bucketSize
 		self.scene = scene #includes geometries and lights
 		self.cam = cam
+		#--------Render Process Settings------------------------
 		self.bias = processSettings["Bias"]
 		self.indirectSamples = processSettings["IndirectSamples"]
 		self.indirectDepthLimit = processSettings["IndirectDepth"]
@@ -33,6 +34,23 @@ class RenderProcess(multiprocessing.Process):
 			renderSettings = json.load(settingsData)
 
 		return renderSettings["RenderProcess"]
+
+	def getNextBucket(self,bucketResult):
+		with self.bucketCntLock:
+			#access shared variable with lock, get the next bucket id
+			#print(self.bucketCnt.value,multiprocessing.current_process().name)
+			if self.bucketCnt.value <= len(self.bucketPosData) * self.AAsamples -1:
+				thisBucketId = self.bucketCnt.value % len(self.bucketPosData)
+				thisAAoffset = math.floor(self.bucketCnt.value / len(self.bucketPosData))
+				self.bucketCnt.value += 1
+				bucketX = self.bucketPosData[thisBucketId][0]
+				bucketY = self.bucketPosData[thisBucketId][1]
+				bucketResult.append(bucketX)
+				bucketResult.append(bucketY)
+				bucketResult.append(thisAAoffset)
+				return True
+			else:
+				return False
 
 	def run(self):
 		#bucket rendered color data is stored in an array
@@ -54,21 +72,15 @@ class RenderProcess(multiprocessing.Process):
 
 		timerStart = datetime.now()
 
+		#-----get the first bucket-------------
+		bucketResult = []
+		self.getNextBucket(bucketResult)
+		bucketX = bucketResult[0]
+		bucketY = bucketResult[1]
+		thisAAoffset = bucketResult[2]
 		#-------Process keeps getting new bucket-------------------------
+		stopSignal = False
 		while True:
-			with self.bucketCntLock:
-				#access shared variable with lock, get the next bucket id
-				#print(self.bucketCnt.value,multiprocessing.current_process().name)
-				if self.bucketCnt.value <= len(self.bucketPosData) * self.AAsamples -1:
-					thisBucketId = self.bucketCnt.value % len(self.bucketPosData)
-					thisAAoffset = math.floor(self.bucketCnt.value / len(self.bucketPosData))
-					self.bucketCnt.value += 1
-				else:
-					break
-
-			bucketX = self.bucketPosData[thisBucketId][0]
-			bucketY = self.bucketPosData[thisBucketId][1]
-
 			#-------------shoot rays---------------------------------------
 			#----Each bucket level--------------
 			for j in range(bucketY,bucketY + self.bucketSize):
@@ -76,13 +88,11 @@ class RenderProcess(multiprocessing.Process):
 				for i in range(bucketX,bucketX + self.bucketSize):
 					#--------Each pixel level--------------------
 					col = Vector(0,0,0)
-
 					rayDir = Vector(i + AAsampleGrid[thisAAoffset][0] - self.width/2,
 									-j - AAsampleGrid[thisAAoffset][1] + self.height/2,
 									-0.5*self.width/math.tan(math.radians(self.cam.angle/2))) #Warning!!!!! Convert to radian!!!!!!!
 					camRay = Ray(self.cam.pos,rayDir)
 
-					#----check intersections with spheres----
 					#hitResult is a list storing calculated data [hit_t, hit_pos,hit_normal,objectId]
 					hitResult = []
 					hitBool = self.scene.getClosestIntersection(camRay,hitResult)
@@ -93,8 +103,25 @@ class RenderProcess(multiprocessing.Process):
 
 					bucketArray[j%self.bucketSize,i%self.bucketSize] = [col.x,col.y,col.z]
 
+			returnData = [bucketX,bucketY,bucketArray,thisAAoffset+1]
 			print("bucket" + str(bucketX) + ":" + str(bucketY) + " Rendered by " + multiprocessing.current_process().name)
-			self.outputQ.put([bucketX,bucketY,bucketArray,thisAAoffset+1])
+
+
+			#----get the next bucket--------
+			nextBucketResult = []
+			if self.getNextBucket(nextBucketResult):
+				bucketX = nextBucketResult[0]
+				bucketY = nextBucketResult[1]
+				thisAAoffset = nextBucketResult[2]
+				returnData.append(bucketX)
+				returnData.append(bucketY)
+			else:
+				stopSignal = True
+				
+			self.outputQ.put(returnData)
+
+			if stopSignal:
+				break
 
 
 		self.outputQ.put("Done")

@@ -118,7 +118,6 @@ class RenderThread(QThread):
 				#convert array to QImage
 				bucketBufferImage = QImage(bucketBufferArray.data,self.bucketSize,self.bucketSize,bucketBufferArray.strides[0],QImage.Format_RGB888)
 				self.updateImgSignal.emit([dataX,dataY,bucketBufferImage])
-				print("bucketCnt",bucketCnt.value)
 
 			if processGetCnt>= processCnt:
 				break

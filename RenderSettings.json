@@ -6,7 +6,7 @@
   "RenderThread":{
     "BucketSize":50,
     "BucketOrderOptions":["Scanline","Random","Center"],
-    "BucketOrder":2
+    "BucketOrder":0
   },
   "RenderProcess": {
     "AAsamples": 4,
