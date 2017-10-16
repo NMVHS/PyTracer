@@ -21,6 +21,7 @@ class RenderProcess(multiprocessing.Process):
 		self.scene = scene #includes geometries and lights
 		self.cam = cam
 		#--------Render Process Settings------------------------
+		self.kernel = processSettings["Kernel"]
 		self.bias = processSettings["Bias"]
 		self.indirectSamples = processSettings["IndirectSamples"]
 		self.indirectDepthLimit = processSettings["IndirectDepth"]
@@ -224,7 +225,9 @@ class RenderProcess(multiprocessing.Process):
 			hitPointColor = hitPointColor + self.getMirrorReflectionColor(currObj,prevHitPos,hitResult,indirectDepth,reflectDepth,reflectDist)
 		else:
 			#Diffuse material
-			hitPointColor = hitPointColor + self.getHitPointColor(hitResult)
+			if self.kernel == 0:
+				#DirectLighting Kernel
+				hitPointColor = hitPointColor + self.getHitPointColor(hitResult)
 
 			#Recurvsive path tracing, only for Diffuse material--------------------
 			if indirectDepth < self.indirectDepthLimit:

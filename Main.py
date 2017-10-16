@@ -57,11 +57,11 @@ def main():
 	quad02 = Quad(Vector(-50,50,-76),Vector(-50,-50,-76),Vector(-50,-50,-186),Vector(-50,50,-186),material=redLambert) #left wall
 	quad03 = Quad(Vector(-50,50,-186),Vector(-50,-50,-186),Vector(50,-50,-186),Vector(50,50,-186),material=whiteLambert)  #back wall
 	quad04 = Quad(Vector(50,50,-186),Vector(50,-50,-186),Vector(50,-50,-76),Vector(50,50,-76),material=greenLambert) #right wall
-	quad05 = Quad(Vector(-50,50,-76),Vector(-50,50,-186),Vector(50,50,-186),Vector(50,50,-76),material=emissive) #top wall
+	quad05 = Quad(Vector(-50,50,-76),Vector(-50,50,-186),Vector(50,50,-186),Vector(50,50,-76),material=whiteLambert) #top wall
 	quad06 = Quad(Vector(-50,20,-76),Vector(-50,20,-186),Vector(30,20,-186),Vector(30,20,-76),material=whiteLambert) #top matte
 
 	#Lights-------------------------------------------------------
-	light01 = DiskLight(Vector(0,48,-136),30,normal=Vector(0,-1,0),samples=8,isDoubleSided=True,visible=True) #light source on the top
+	light01 = DiskLight(Vector(0,48,-136),30,normal=Vector(0,-1,0),samples=1,isDoubleSided=True,visible=True) #light source on the top
 	light02 = PointLight(Vector(-20,40,-120))
 	light03 = PointLight(Vector(20,30,-90))
 

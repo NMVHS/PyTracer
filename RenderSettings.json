@@ -9,8 +9,10 @@
     "BucketOrder":2
   },
   "RenderProcess": {
-    "AAsamples": 8,
-    "IndirectSamples":8,
+    "KernelOptions":["DirectLighting","PathTracing"],
+    "Kernel":0,
+    "AAsamples": 16,
+    "IndirectSamples":1,
     "IndirectDepth":1,
     "Bias":0.0001,
     "ReflectionMaxDepth":4,
