@@ -5,13 +5,14 @@
   },
   "RenderThread":{
     "BucketSize":50,
-    "BucketOrderOptions":["Scanline","Random","Center","Bottom"],
+    "BucketOrderOptions":["Scanline","Random","Spiral","Bottom"],
     "BucketOrder":2
   },
   "RenderProcess": {
     "KernelOptions":["DirectLighting","PathTracing"],
     "Kernel":0,
-    "AAsamples": 16,
+    "DOF":1,
+    "AAsamples": 1,
     "IndirectSamples":1,
     "IndirectDepth":1,
     "Bias":0.0001,

@@ -20,8 +20,10 @@ class RenderProcess(multiprocessing.Process):
 		self.bucketSize = bucketSize
 		self.scene = scene #includes geometries and lights
 		self.cam = cam
+		self.filmFitOptions = {"Horizontal":self.width,"Vertical":self.height}
 		#--------Render Process Settings------------------------
 		self.kernel = processSettings["Kernel"]
+		self.dof = processSettings["DOF"]
 		self.bias = processSettings["Bias"]
 		self.indirectSamples = processSettings["IndirectSamples"]
 		self.indirectDepthLimit = processSettings["IndirectDepth"]
@@ -71,6 +73,10 @@ class RenderProcess(multiprocessing.Process):
 
 		timerStart = datetime.now()
 
+		#---------------------
+		filmFitVal = self.filmFitOptions[self.cam.filmFit]
+		focusRatio = self.cam.focusDist / (0.5*filmFitVal/math.tan(self.cam.angleOfViewH/2))
+		#---------------------
 		bucketResult = []
 		#-------Process keeps getting new bucket-------------------------
 		while self.getNextBucket(bucketResult):
@@ -85,23 +91,29 @@ class RenderProcess(multiprocessing.Process):
 				for i in range(bucketX,bucketX + self.bucketSize):
 					#--------Each pixel level--------------------
 					col = Vector(0,0,0)
-					rayDir = Vector(i + AAsampleGrid[thisAAoffset][0] - self.width/2,
-									-j - AAsampleGrid[thisAAoffset][1] + self.height/2,
-									-0.5*self.width/math.tan(math.radians(self.cam.angle/2))) #Warning!!!!! Convert to radian!!!!!!!
-					camRay = Ray(self.cam.pos,rayDir)
+					if self.dof == 1:
+						camRayStart = self.cam.getRandomPointOnLens()
+					else:
+						camRayStart = self.cam.pos
+
+					camRayEnd = Vector((i + AAsampleGrid[thisAAoffset][0] - self.width/2)*focusRatio,
+									(-j - AAsampleGrid[thisAAoffset][1] + self.height/2)*focusRatio,
+									-self.cam.focusDist) #Warning!!!!! Convert to radian!!!!!!!
+					rayDir = camRayEnd - camRayStart
+					camRay = Ray(camRayStart,rayDir)
 
 					#hitResult is a list storing calculated data [hit_t, hit_pos,hit_normal,objectId]
 					hitResult = []
 					hitBool = self.scene.getClosestIntersection(camRay,hitResult)
 
 					if hitBool:
-						prevHitPos = self.cam.pos
+						prevHitPos = camRayStart
 						col = col + self.getColor(hitResult,prevHitPos)
 
 					bucketArray[j%self.bucketSize,i%self.bucketSize] = [col.x,col.y,col.z]
 
 			returnData = [bucketX,bucketY,bucketArray,thisAAoffset+1,self.AAsamples]
-			print("bucket" + str(bucketX) + ":" + str(bucketY) + " Rendered by " + multiprocessing.current_process().name)
+			#print("bucket" + str(bucketX) + ":" + str(bucketY) + " Rendered by " + multiprocessing.current_process().name)
 
 			#----get the next bucket--------
 			self.outputQ.put(returnData)

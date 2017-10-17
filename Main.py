@@ -34,6 +34,8 @@ def main():
 	blueLambert = Material(diffuseColor=Vector(0,0,0.9))
 	greenLambert = Material(diffuseColor=Vector(0.1,0.9,0.1))
 	whiteLambert = Material(diffuseColor=Vector(0.9,0.9,0.9))
+	yellowLambert = Material(diffuseColor=Vector(0.95,0.4,0.0))
+	lightBlueLambert = Material(diffuseColor=Vector(0.1,0.5,0.9))
 	mirror = Material(reflectionColor=Vector(1,1,1),reflectionWeight=1)
 	redMirror = Material(reflectionColor=Vector(0.9,0,0),reflectionWeight=1)
 	emissive = Material(emissionAmount=500)
@@ -54,9 +56,9 @@ def main():
 	tri02 = Triangle(Vector(30,40,-146),Vector(50,20,-166),Vector(-10,20,-146),material=glass)
 	disk01 = Disk(Vector(-30,30,-136),15,Vector(1,0,0),material=blueLambert)
 	quad01 = Quad(Vector(-50,-50,-186),Vector(-50,-50,-76),Vector(50,-50,-76),Vector(50,-50,-186),material=whiteLambert) #bottom wall
-	quad02 = Quad(Vector(-50,50,-76),Vector(-50,-50,-76),Vector(-50,-50,-186),Vector(-50,50,-186),material=redLambert) #left wall
+	quad02 = Quad(Vector(-50,50,-76),Vector(-50,-50,-76),Vector(-50,-50,-186),Vector(-50,50,-186),material=yellowLambert) #left wall
 	quad03 = Quad(Vector(-50,50,-186),Vector(-50,-50,-186),Vector(50,-50,-186),Vector(50,50,-186),material=whiteLambert)  #back wall
-	quad04 = Quad(Vector(50,50,-186),Vector(50,-50,-186),Vector(50,-50,-76),Vector(50,50,-76),material=greenLambert) #right wall
+	quad04 = Quad(Vector(50,50,-186),Vector(50,-50,-186),Vector(50,-50,-76),Vector(50,50,-76),material=lightBlueLambert) #right wall
 	quad05 = Quad(Vector(-50,50,-76),Vector(-50,50,-186),Vector(50,50,-186),Vector(50,50,-76),material=whiteLambert) #top wall
 	quad06 = Quad(Vector(-50,20,-76),Vector(-50,20,-186),Vector(30,20,-186),Vector(30,20,-76),material=whiteLambert) #top matte
 
@@ -67,7 +69,7 @@ def main():
 
 	newScene = Scene({"geometry":[quad01,quad02,quad03,quad04,quad05,sphere02,sphere03,sphere04],"light":[light01]})
 
-	cam = Camera(Vector(0,0,0),Vector(0,0,1),60)
+	cam = Camera(Vector(0,0,0),Vector(0,0,1),32,aperture=2,focusDist=110,filmFit="Horizontal")
 	renderView.startRender(newScene,cam)
 
 	sys.exit(renderApp.exec_())
