@@ -33,8 +33,8 @@ class RenderThread(QThread):
 		manager = multiprocessing.Manager()
 		#input the bukcetSize, return a list of bucket Data
 		#bucketSplitData = [[bucketPosX, bucketPosY, AAcnt].......]
-		bucketHcnt = int(self.height / self.bucketSize)
-		bucketWcnt = int(self.width / self.bucketSize)
+		bucketHcnt = int(self.height / self.bucketSize) #Vertical
+		bucketWcnt = int(self.width / self.bucketSize) #Horizontal
 
 		bucketSplitData = manager.list()
 		for y in range(0,bucketHcnt):
@@ -47,19 +47,21 @@ class RenderThread(QThread):
 			#Buckets in random order:
 			shuffle(bucketSplitData)
 		elif self.bucketOrder == 2:
-			#Buckets start from the center
-			currIndex = math.floor(len(bucketSplitData)/2 - bucketHcnt/2- 1)
+			#Spiral buckets
+			currIndex = math.floor(len(bucketSplitData)/2 - bucketWcnt/2- 1)
 			shuffledBucketList = manager.list()
 			shuffledBucketList.append(bucketSplitData[currIndex])
 			stepAmount = 1
 			stepLimit = 0
 			stepDir = 0
-			switchList = [1,bucketHcnt,-1,-bucketHcnt] #move right,down,left,up
+			switchList = [1,bucketWcnt,-1,-bucketWcnt] #move right,down,left,up
 			while len(shuffledBucketList) < len(bucketSplitData):
 				for i in range(stepAmount):
 					#each Step
 					currIndex += switchList[stepDir]
-					shuffledBucketList.append(bucketSplitData[currIndex])
+					if currIndex < len(bucketSplitData) and currIndex >= 0:
+						#if this move is within range
+						shuffledBucketList.append(bucketSplitData[currIndex])
 
 				if stepDir < 3:
 					stepDir += 1
@@ -103,6 +105,7 @@ class RenderThread(QThread):
 			each.start()
 
 		processGetCnt = 0
+		currAAcnt = 1
 		while True:
 			bucketDataSet = jobsQueue.get() #block until an item is available
 
@@ -110,6 +113,10 @@ class RenderThread(QThread):
 				#Render Process killed
 				processGetCnt = processGetCnt + 1
 			else:
+				if bucketDataSet[3] > currAAcnt:
+					#This AA sample render is done
+					print("Finished AA Samples: " + str(currAAcnt))
+					currAAcnt += 1
 				#stamp bucket array onto the canvas array
 				dataX = bucketDataSet[0]
 				dataY = bucketDataSet[1]
