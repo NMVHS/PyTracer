@@ -35,8 +35,8 @@ class DiskLight(Light,Disk):
 		#generate a sample point on the disk
 		# samplePtLi = []
 		# for i in range(self.samples):
-		theta = random.random() * math.pi #range [0,2pi)
-		multiplier = random.random() #range [0,1)
+		theta = random.random() * 2 * math.pi #range [0,2pi)
+		multiplier =  1 - random.random()  #range (0,1]
 		randPointOnDisk =self.pos +  Vector(math.cos(theta) * self.radius * multiplier,0,math.sin(theta) * self.radius * multiplier)
 		#samplePtLi.append(randPointOnDisk)
 
