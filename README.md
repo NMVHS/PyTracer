@@ -31,7 +31,7 @@
 
   * Camera:
     * Camera exposure
-    * Depth of field
+    * Depth of field [✓]
     * Motion blur
 
   * Optimization:

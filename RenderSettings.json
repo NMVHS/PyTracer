@@ -12,7 +12,7 @@
     "KernelOptions":["DirectLighting","PathTracing"],
     "Kernel":0,
     "DOF":1,
-    "AAsamples": 1,
+    "AAsamples": 9,
     "IndirectSamples":1,
     "IndirectDepth":1,
     "Bias":0.0001,

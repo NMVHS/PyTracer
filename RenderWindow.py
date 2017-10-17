@@ -63,10 +63,10 @@ class RenderWindow(QWidget):
 	def startRender(self,scene,cam):
 		#start render in a new thread
 		self.renderTask = RenderThread(self.width,self.height,scene,cam)
-		self.renderTask.finished.connect(self.saveImage)
-		self.renderTask.finished.connect(self.cleanBucketLocators)
 		self.renderTask.updateImgSignal.connect(self.updateRenderImage)
 		self.renderTask.bucketProgressSignal.connect(self.showBucketProgess)
+		self.renderTask.finished.connect(self.cleanBucketLocators)
+		self.renderTask.finished.connect(self.saveImage)
 		self.renderTask.start()
 
 	def cleanBucketLocators(self):
