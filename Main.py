@@ -3,6 +3,7 @@
 #-------------------------
 #Some stuff can be easily missing:
 #1. keep in mind when using tan/cos/sin, use radians not degrees
+#2. scene unit: cm
 
 #-------------------------
 import sys, math, multiprocessing, numpy
@@ -42,7 +43,7 @@ def main():
 	glass = Material(refractionWeight=1,reflectionWeight=1)
 
 	#Geometries----------------------------------------------
-	#important! This is a right handed coordinate system!
+	#important! This is a right handed coordinate system! Scene unit: cm!!!
 	sphere01 = Sphere(Vector(-15,-30,-136),20,material=whiteLambert)
 	sphere02 = Sphere(Vector(10,-20,-146),30,material=mirror)
 	sphere03 = Sphere(Vector(-25,-35,-115),15,material=glass)
@@ -69,8 +70,9 @@ def main():
 
 	newScene = Scene({"geometry":[quad01,quad02,quad03,quad04,quad05,sphere02,sphere03,sphere04],"light":[light01]})
 
-	cam = Camera(Vector(0,0,0),Vector(0,0,1),32,aperture=2.8,focusDist=113,filmFit="Horizontal")
-	renderView.startRender(newScene,cam)
+	wideCam = Camera(Vector(0,0,0),Vector(0,0,1),32,aperture=2.8,focusDist=113,filmFit="Horizontal")
+	teleCam = Camera(Vector(0,0,130),Vector(0,0,1),80,aperture=1.4,focusDist=243,filmFit="Horizontal")
+	renderView.startRender(newScene,teleCam)
 
 	sys.exit(renderApp.exec_())
 

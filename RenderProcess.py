@@ -96,7 +96,7 @@ class RenderProcess(multiprocessing.Process):
 					else:
 						camRayStart = self.cam.pos
 
-					camRayEnd = Vector((i + AAsampleGrid[thisAAoffset][0] - self.width/2)*focusRatio,
+					camRayEnd = self.cam.pos + Vector((i + AAsampleGrid[thisAAoffset][0] - self.width/2)*focusRatio,
 									(-j - AAsampleGrid[thisAAoffset][1] + self.height/2)*focusRatio,
 									-self.cam.focusDist) #Warning!!!!! Convert to radian!!!!!!!
 					rayDir = camRayEnd - camRayStart

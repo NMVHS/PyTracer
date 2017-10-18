@@ -15,7 +15,7 @@ class Camera:
 		self.exposure = exposure
 		self.aperture = aperture #Aperture is the f-number 1.4,2.8 etc
 		self.focusDist = focusDist #unit cm
-		self.pupilDiameter = self.focalLength / self.aperture #unit mm
+		self.pupilDiameter = self.focalLength / self.aperture * 0.1 #unit mm --> scene unit: cm
 
 	def getRandomPointOnLens(self):
 		theta = random.random() * 2 * math.pi #[0,2pi)
@@ -25,6 +25,8 @@ class Camera:
 			multiplier =  2 - u
 		else:
 			multiplier =  u
+
+		#unit of return point is cm
 		randPointOnLens =self.pos +  Vector(math.cos(theta) * self.pupilDiameter* 0.5 * multiplier,math.sin(theta) * self.pupilDiameter * 0.5 * multiplier,0)
 
 		return randPointOnLens
