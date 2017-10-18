@@ -69,7 +69,7 @@ def main():
 
 	newScene = Scene({"geometry":[quad01,quad02,quad03,quad04,quad05,sphere02,sphere03,sphere04],"light":[light01]})
 
-	cam = Camera(Vector(0,0,0),Vector(0,0,1),32,aperture=2.8,focusDist=106,filmFit="Horizontal")
+	cam = Camera(Vector(0,0,0),Vector(0,0,1),32,aperture=2.8,focusDist=113,filmFit="Horizontal")
 	renderView.startRender(newScene,cam)
 
 	sys.exit(renderApp.exec_())

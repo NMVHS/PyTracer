@@ -36,7 +36,13 @@ class DiskLight(Light,Disk):
 		# samplePtLi = []
 		# for i in range(self.samples):
 		theta = random.random() * 2 * math.pi #range [0,2pi)
-		multiplier =  1 - random.random()  #range (0,1]
+		u = random.random() + random.random()
+		#Better sampling method
+		if u > 1:
+			multiplier =  2 - u
+		else:
+			multiplier =  u
+			
 		randPointOnDisk =self.pos +  Vector(math.cos(theta) * self.radius * multiplier,0,math.sin(theta) * self.radius * multiplier)
 		#samplePtLi.append(randPointOnDisk)
 
